@@ -367,8 +367,10 @@ export const getProduct = createServerFn({ method: "GET" })
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return (row as unknown as AnalyzedProduct) ?? null;
+    if (!row) return null;
+    return refreshIfUncertain(row as unknown as AnalyzedProduct);
   });
+
 
 // -------- Ingredient detail --------
 export const getIngredient = createServerFn({ method: "GET" })
