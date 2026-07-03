@@ -18,41 +18,50 @@ export type Database = {
         Row: {
           aliases: string[]
           category: string
+          confidence: number
           created_at: string
           e_number: string | null
           explanation: string
           id: string
+          last_verified_at: string
           name: string
           slug: string
           source: string | null
           vegan: boolean | null
           vegetarian: boolean | null
+          verification: string
         }
         Insert: {
           aliases?: string[]
           category: string
+          confidence?: number
           created_at?: string
           e_number?: string | null
           explanation: string
           id?: string
+          last_verified_at?: string
           name: string
           slug: string
           source?: string | null
           vegan?: boolean | null
           vegetarian?: boolean | null
+          verification?: string
         }
         Update: {
           aliases?: string[]
           category?: string
+          confidence?: number
           created_at?: string
           e_number?: string | null
           explanation?: string
           id?: string
+          last_verified_at?: string
           name?: string
           slug?: string
           source?: string | null
           vegan?: boolean | null
           vegetarian?: boolean | null
+          verification?: string
         }
         Relationships: []
       }
