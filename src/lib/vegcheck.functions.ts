@@ -216,8 +216,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
       throw new Error("No ingredient list was detected in the photo.");
     }
     const supabase = serverSupabase();
-    const known = await loadKnownIngredients();
-    const analysis = analyzeText(text, known);
+    const analysis = await analyzeAndLearn(text);
     return upsertProduct(supabase, {
       name: "Scanned Label",
       ingredients_text: text,
