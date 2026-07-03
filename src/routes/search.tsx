@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { Search, Loader2, ArrowLeft } from "lucide-react";
@@ -46,9 +46,10 @@ function SearchPage() {
   };
 
   // Run initial query if provided
-  useState(() => {
-    if (initial) run(initial);
-  });
+  useEffect(() => {
+    if (initial) void run(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openRemote = async (barcode: string) => {
     setAnalyzing(barcode);
