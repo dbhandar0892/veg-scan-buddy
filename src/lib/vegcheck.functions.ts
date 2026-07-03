@@ -96,7 +96,7 @@ export interface AnalyzedProduct {
 }
 
 async function upsertProduct(
-  supabase: ReturnType<typeof serverSupabase>,
+  _supabase: ReturnType<typeof serverSupabase>,
   data: {
     barcode?: string | null;
     name: string;
@@ -124,8 +124,10 @@ async function upsertProduct(
     source: data.source,
     last_analyzed_at: new Date().toISOString(),
   };
-  // Cast around Database placeholder typing
-  const client = supabase as unknown as ReturnType<typeof createClient>;
+  // Product cache writes are trusted server-side work — use the admin client
+  // so RLS on `products` (public read-only) doesn't block the cache upsert.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const client = supabaseAdmin as unknown as ReturnType<typeof createClient>;
   const query = data.barcode
     ? client.from("products").upsert(row as never, { onConflict: "barcode" }).select().single()
     : client.from("products").insert(row as never).select().single();
@@ -134,6 +136,7 @@ async function upsertProduct(
   const s = saved as unknown as AnalyzedProduct;
   return s;
 }
+
 
 // -------- Barcode lookup via Open Food Facts --------
 export const lookupBarcode = createServerFn({ method: "POST" })
