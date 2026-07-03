@@ -17,6 +17,7 @@ export interface KnownIngredient {
   category: IngredientCategory;
   vegan: boolean | null;
   vegetarian: boolean | null;
+  source?: string | null;
   explanation: string;
   e_number: string | null;
 }
