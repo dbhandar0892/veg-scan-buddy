@@ -143,3 +143,83 @@ export async function learnUnknownIngredients(
   }
   return (inserted ?? []) as KnownIngredient[];
 }
+
+export interface ResearchVerdict {
+  token: string;
+  vegan: boolean | null;
+  vegetarian: boolean | null;
+  confidence: number;
+  explanation: string;
+  sources: string[];
+}
+
+/**
+ * Deep-research pass for ingredients still uncertain after DB + classify.
+ * Uses Gemini with Google Search grounding to check the manufacturer's site
+ * and the wider web before giving up with "Unable to Confirm".
+ */
+export async function researchUncertain(
+  uncertain: { token: string; name: string }[],
+  ctx: { brand?: string | null; productName?: string | null },
+): Promise<ResearchVerdict[]> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key || uncertain.length === 0) return [];
+  const list = uncertain.map((u, i) => `${i + 1}. ${u.name} (raw: "${u.token}")`).join("\n");
+  const productLine = [ctx.brand, ctx.productName].filter(Boolean).join(" — ") || "an unspecified product";
+
+  const system = `You are a food-ingredient investigator with web search.
+For each ingredient, use Google Search to check:
+1. The manufacturer's official website / FAQ / customer-service statements for THIS specific product.
+2. Reputable databases (PETA, Vegan Society, Barnivore, Open Food Facts, EFSA).
+3. Peer-reviewed or trade sources describing how this additive is produced.
+
+Only mark vegan=true/false or vegetarian=true/false when a credible source confirms it for this product or, if none, for the ingredient in general practice. If sources conflict or are silent, keep vegan=null and vegetarian=null and explain what you found and why it is still uncertain.
+
+Return ONLY JSON matching:
+{"verdicts":[{"token":string,"vegan":boolean|null,"vegetarian":boolean|null,"confidence":number,"explanation":string,"sources":string[]}]}
+- explanation: <=35 words, plain English, mention the source in prose.
+- sources: up to 3 URLs actually used.
+- confidence: 0.0-1.0. Use <=0.5 if still uncertain.`;
+
+  const user = `Product: ${productLine}
+Ingredients to investigate:
+${list}
+
+Search the web now and return the JSON.`;
+
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        response_format: { type: "json_object" },
+        tools: [{ type: "google_search" }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error("[research] network error:", err);
+    return [];
+  }
+  if (!res.ok) {
+    console.error("[research] AI failed", res.status, await res.text().catch(() => ""));
+    return [];
+  }
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: { verdicts?: ResearchVerdict[] } = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  return (parsed.verdicts ?? []).filter((v) => v && v.token);
+}

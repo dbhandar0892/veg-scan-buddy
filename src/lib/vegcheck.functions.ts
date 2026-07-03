@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
+  deriveStatusFromHits,
   type AnalysisResult,
   type KnownIngredient,
   type Status,
@@ -26,18 +27,57 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return (data ?? []) as KnownIngredient[];
 }
 
-// Self-learning: analyze once, ask AI about unknowns, save them, re-analyze.
-async function analyzeAndLearn(text: string): Promise<AnalysisResult> {
+// Self-learning: DB → AI classify → web-research any still-uncertain items.
+async function analyzeAndLearn(
+  text: string,
+  ctx: { brand?: string | null; productName?: string | null } = {},
+): Promise<AnalysisResult> {
   const known = await loadKnownIngredients();
-  const first = analyzeText(text, known);
-  const unknownTokens = first.hits
+  let result = analyzeText(text, known);
+
+  // Step 1: classify brand-new tokens (adds to global DB).
+  const unknownTokens = result.hits
     .filter((h) => h.slug === null && h.category === "unknown")
     .map((h) => h.token);
-  if (unknownTokens.length === 0) return first;
-  const { learnUnknownIngredients } = await import("./learn.server");
-  const learned = await learnUnknownIngredients(unknownTokens);
-  if (learned.length === 0) return first;
-  return analyzeText(text, [...known, ...learned]);
+  if (unknownTokens.length > 0) {
+    const { learnUnknownIngredients } = await import("./learn.server");
+    const learned = await learnUnknownIngredients(unknownTokens);
+    if (learned.length > 0) result = analyzeText(text, [...known, ...learned]);
+  }
+
+  // Step 2: if any hit is still uncertain, do a web-research pass with the
+  // product/brand as context so we can check the manufacturer's own statements.
+  if (result.status === "unknown") {
+    const uncertain = result.hits
+      .filter(
+        (h) =>
+          (h.category === "unknown" && h.slug === null) ||
+          h.vegan === null ||
+          h.vegetarian === null,
+      )
+      .slice(0, 10)
+      .map((h) => ({ token: h.token, name: h.name }));
+    if (uncertain.length > 0) {
+      const { researchUncertain } = await import("./learn.server");
+      const verdicts = await researchUncertain(uncertain, ctx);
+      if (verdicts.length > 0) {
+        const byToken = new Map(verdicts.map((v) => [v.token.toLowerCase(), v]));
+        const patched = result.hits.map((h) => {
+          const v = byToken.get(h.token.toLowerCase());
+          if (!v) return h;
+          const sourceNote = v.sources.length > 0 ? ` (source: ${v.sources[0]})` : "";
+          return {
+            ...h,
+            vegan: v.vegan,
+            vegetarian: v.vegetarian,
+            explanation: `${v.explanation}${sourceNote}`,
+          };
+        });
+        result = deriveStatusFromHits(patched);
+      }
+    }
+  }
+  return result;
 }
 
 export interface AnalyzedProduct {
@@ -131,7 +171,10 @@ export const lookupBarcode = createServerFn({ method: "POST" })
     const ingredientsText = (p.ingredients_text_en || p.ingredients_text || "").trim();
     if (!ingredientsText) return null;
 
-    const analysis = await analyzeAndLearn(ingredientsText);
+    const analysis = await analyzeAndLearn(ingredientsText, {
+      brand: p.brands ?? null,
+      productName: p.product_name ?? null,
+    });
     return upsertProduct(supabase, {
       barcode: data.barcode,
       name: p.product_name || "Unknown Product",
@@ -156,7 +199,7 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<AnalyzedProduct> => {
     const supabase = serverSupabase();
-    const analysis = await analyzeAndLearn(data.text);
+    const analysis = await analyzeAndLearn(data.text, { productName: data.name ?? null });
     return upsertProduct(supabase, {
       name: data.name || "Scanned Ingredients",
       ingredients_text: data.text,

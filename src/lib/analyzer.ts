@@ -111,52 +111,22 @@ function matchToken(
   return best;
 }
 
-export function analyzeText(
-  text: string,
-  known: KnownIngredient[],
-): AnalysisResult {
-  const tokens = tokenizeIngredients(text);
-  const { byName, byE } = buildLookup(known);
-
-  const hits: IngredientHit[] = [];
+export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   let matched = 0;
   let unknownCount = 0;
-  let hasAnimalNonDairy = false; // meat, gelatin, rennet, carmine, shellac, isinglass
+  let hasAnimalNonDairy = false;
   let hasDairyEggHoney = false;
   let hasUnknownIng = false;
 
-  for (const token of tokens) {
-    const ing = matchToken(token, byName, byE);
-    if (!ing) {
-      // Unmatched short/common tokens like "spices" are treated as unknown-soft.
-      // Only push as hit if the token seems ingredient-like (>3 chars).
-      if (token.length > 3) {
-        unknownCount++;
-        hits.push({
-          token,
-          slug: null,
-          name: token,
-          category: "unknown",
-          vegan: null,
-          vegetarian: null,
-          explanation: "Not in our ingredient database yet.",
-        });
-      }
+  for (const h of hits) {
+    if (h.slug === null && h.category === "unknown" && h.vegan === null && h.vegetarian === null) {
+      unknownCount++;
       continue;
     }
     matched++;
-    hits.push({
-      token,
-      slug: ing.slug,
-      name: ing.name,
-      category: ing.category,
-      vegan: ing.vegan,
-      vegetarian: ing.vegetarian,
-      explanation: ing.explanation,
-    });
-    if (ing.vegetarian === false) hasAnimalNonDairy = true;
-    else if (ing.vegan === false && ing.vegetarian === true) hasDairyEggHoney = true;
-    else if (ing.vegan === null || ing.vegetarian === null) hasUnknownIng = true;
+    if (h.vegetarian === false) hasAnimalNonDairy = true;
+    else if (h.vegan === false && h.vegetarian === true) hasDairyEggHoney = true;
+    else if (h.vegan === null || h.vegetarian === null) hasUnknownIng = true;
   }
 
   const totalConsidered = matched + unknownCount;
@@ -164,16 +134,13 @@ export function analyzeText(
 
   let status: Status;
   let explanation: string;
-
   if (hasAnimalNonDairy) {
     status = "not_vegetarian";
     const culprit = hits.find((h) => h.vegetarian === false);
-    explanation = culprit
-      ? `Contains ${culprit.name.toLowerCase()}.`
-      : "Contains an animal ingredient.";
+    explanation = culprit ? `Contains ${culprit.name.toLowerCase()}.` : "Contains an animal ingredient.";
   } else if (hasUnknownIng || unknownCount > 0) {
     status = "unknown";
-    const uh = hits.find((h) => h.category === "unknown");
+    const uh = hits.find((h) => h.category === "unknown" || h.vegan === null);
     explanation = uh
       ? `Contains ${uh.name.toLowerCase()} which can be animal or plant.`
       : "Some ingredients could not be confirmed.";
@@ -191,15 +158,50 @@ export function analyzeText(
     explanation = "No ingredients could be identified.";
   }
 
-  // Confidence: high when known ratio is high and no unknowns.
   let confidence = knownRatio;
   if (status === "unknown") confidence = Math.min(confidence, 0.55);
   if (status === "vegan" && unknownCount === 0 && matched >= 3) confidence = Math.max(confidence, 0.95);
   if (status === "not_vegetarian") confidence = Math.max(confidence, 0.9);
   if (status === "vegetarian" && unknownCount === 0) confidence = Math.max(confidence, 0.88);
   confidence = Math.max(0, Math.min(1, confidence));
-
   return { status, confidence, explanation, hits };
+}
+
+export function analyzeText(
+  text: string,
+  known: KnownIngredient[],
+): AnalysisResult {
+  const tokens = tokenizeIngredients(text);
+  const { byName, byE } = buildLookup(known);
+
+  const hits: IngredientHit[] = [];
+  for (const token of tokens) {
+    const ing = matchToken(token, byName, byE);
+    if (!ing) {
+      if (token.length > 3) {
+        hits.push({
+          token,
+          slug: null,
+          name: token,
+          category: "unknown",
+          vegan: null,
+          vegetarian: null,
+          explanation: "Not in our ingredient database yet.",
+        });
+      }
+      continue;
+    }
+    hits.push({
+      token,
+      slug: ing.slug,
+      name: ing.name,
+      category: ing.category,
+      vegan: ing.vegan,
+      vegetarian: ing.vegetarian,
+      explanation: ing.explanation,
+    });
+  }
+  return deriveStatusFromHits(hits);
 }
 
 export const STATUS_META: Record<
