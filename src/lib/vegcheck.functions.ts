@@ -26,6 +26,20 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return (data ?? []) as KnownIngredient[];
 }
 
+// Self-learning: analyze once, ask AI about unknowns, save them, re-analyze.
+async function analyzeAndLearn(text: string): Promise<AnalysisResult> {
+  const known = await loadKnownIngredients();
+  const first = analyzeText(text, known);
+  const unknownTokens = first.hits
+    .filter((h) => h.slug === null && h.category === "unknown")
+    .map((h) => h.token);
+  if (unknownTokens.length === 0) return first;
+  const { learnUnknownIngredients } = await import("./learn.server");
+  const learned = await learnUnknownIngredients(unknownTokens);
+  if (learned.length === 0) return first;
+  return analyzeText(text, [...known, ...learned]);
+}
+
 export interface AnalyzedProduct {
   id: string;
   barcode: string | null;
