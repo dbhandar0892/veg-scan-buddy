@@ -137,6 +137,33 @@ async function upsertProduct(
   return s;
 }
 
+// If a cached product is still uncertain, re-run analysis (which triggers the
+// web-research pass with brand/name context). Newly-learned ingredients or a
+// successful research pass can flip status from unknown → vegetarian/vegan.
+// Returns the freshest record we have.
+async function refreshIfUncertain(row: AnalyzedProduct): Promise<AnalyzedProduct> {
+  if (row.status !== "unknown") return row;
+  if (!row.ingredients_text) return row;
+  try {
+    const analysis = await analyzeAndLearn(row.ingredients_text, {
+      brand: row.brand,
+      productName: row.name,
+    });
+    if (analysis.status === row.status && analysis.confidence <= row.confidence) return row;
+    return await upsertProduct(serverSupabase(), {
+      barcode: row.barcode,
+      name: row.name,
+      brand: row.brand,
+      image_url: row.image_url,
+      ingredients_text: row.ingredients_text,
+      analysis,
+      source: row.source ?? "recheck",
+    });
+  } catch (err) {
+    console.error("[recheck] failed:", err);
+    return row;
+  }
+}
 
 // -------- Barcode lookup via Open Food Facts --------
 export const lookupBarcode = createServerFn({ method: "POST" })
@@ -150,7 +177,10 @@ export const lookupBarcode = createServerFn({ method: "POST" })
       .select("*")
       .eq("barcode", data.barcode)
       .maybeSingle();
-    if (cached.data) return cached.data as unknown as AnalyzedProduct;
+    if (cached.data) {
+      return refreshIfUncertain(cached.data as unknown as AnalyzedProduct);
+    }
+
 
     const res = await fetch(
       `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(data.barcode)}.json?fields=product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text`,
