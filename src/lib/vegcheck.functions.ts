@@ -171,7 +171,10 @@ export const lookupBarcode = createServerFn({ method: "POST" })
     const ingredientsText = (p.ingredients_text_en || p.ingredients_text || "").trim();
     if (!ingredientsText) return null;
 
-    const analysis = await analyzeAndLearn(ingredientsText);
+    const analysis = await analyzeAndLearn(ingredientsText, {
+      brand: p.brands ?? null,
+      productName: p.product_name ?? null,
+    });
     return upsertProduct(supabase, {
       barcode: data.barcode,
       name: p.product_name || "Unknown Product",
