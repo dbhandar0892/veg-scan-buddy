@@ -61,9 +61,24 @@ async function analyzeAndLearn(
       const { researchUncertain } = await import("./learn.server");
       const verdicts = await researchUncertain(uncertain, ctx);
       if (verdicts.length > 0) {
-        const byToken = new Map(verdicts.map((v) => [v.token.toLowerCase(), v]));
+        // The AI sometimes echoes the raw token, sometimes the display name.
+        // Index by both, plus a loose contains-match as a last resort.
+        const byKey = new Map<string, (typeof verdicts)[number]>();
+        for (const v of verdicts) byKey.set(v.token.trim().toLowerCase(), v);
+        const findVerdict = (h: (typeof result.hits)[number]) => {
+          const t = h.token.trim().toLowerCase();
+          const n = h.name.trim().toLowerCase();
+          return (
+            byKey.get(t) ??
+            byKey.get(n) ??
+            verdicts.find((v) => {
+              const vt = v.token.trim().toLowerCase();
+              return vt.includes(t) || t.includes(vt) || vt.includes(n) || n.includes(vt);
+            })
+          );
+        };
         const patched = result.hits.map((h) => {
-          const v = byToken.get(h.token.toLowerCase());
+          const v = findVerdict(h);
           if (!v) return h;
           const sourceNote = v.sources.length > 0 ? ` (source: ${v.sources[0]})` : "";
           return {
@@ -75,6 +90,7 @@ async function analyzeAndLearn(
         });
         result = deriveStatusFromHits(patched);
       }
+
     }
   }
   return result;
