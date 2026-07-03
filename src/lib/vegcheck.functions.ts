@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
+  deriveStatusFromHits,
   type AnalysisResult,
   type KnownIngredient,
   type Status,
