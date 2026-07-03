@@ -1,13 +1,20 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, ScanLine, History, Heart, Settings } from "lucide-react";
 
-const items = [
+type NavItem = {
+  to: "/" | "/scan" | "/history" | "/favorites" | "/settings";
+  label: string;
+  icon: typeof Home;
+  primary?: boolean;
+};
+
+const items: NavItem[] = [
   { to: "/", label: "Home", icon: Home },
   { to: "/scan", label: "Scan", icon: ScanLine, primary: true },
   { to: "/history", label: "History", icon: History },
   { to: "/favorites", label: "Favorites", icon: Heart },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
