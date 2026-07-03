@@ -156,8 +156,7 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<AnalyzedProduct> => {
     const supabase = serverSupabase();
-    const known = await loadKnownIngredients();
-    const analysis = analyzeText(data.text, known);
+    const analysis = await analyzeAndLearn(data.text);
     return upsertProduct(supabase, {
       name: data.name || "Scanned Ingredients",
       ingredients_text: data.text,
