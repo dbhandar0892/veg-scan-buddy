@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BottomNav } from "../components/BottomNav";
+import { registerServiceWorker } from "../lib/register-sw";
+
 
 function NotFoundComponent() {
   return (
@@ -124,9 +126,11 @@ function ThemeBoot() {
       stored === "dark" ||
       (stored !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.classList.toggle("dark", isDark);
+    registerServiceWorker();
   }, []);
   return null;
 }
+
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
