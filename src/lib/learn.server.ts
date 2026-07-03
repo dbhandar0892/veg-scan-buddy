@@ -195,7 +195,10 @@ Search the web now and return the JSON.`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         response_format: { type: "json_object" },
-        tools: [{ type: "google_search" }],
+        // OpenRouter web-search plugin — enables live grounding with URL citations.
+        // (The Gemini-native `tools: [{ type: "google_search" }]` field is
+        // rejected on this path with MALFORMED_FUNCTION_CALL.)
+        plugins: [{ id: "web", max_results: 5 }],
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
