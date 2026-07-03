@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ScanRouteImport } from './routes/scan'
@@ -24,6 +25,11 @@ import { Route as IngredientSlugRouteImport } from './routes/ingredient.$slug'
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/scan'
     | '/search'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/scan'
     | '/search'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/scan'
     | '/search'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   ScanRoute: typeof ScanRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   IngredientSlugRoute: typeof IngredientSlugRoute
   ResultIdRoute: typeof ResultIdRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScanRoute: ScanRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   IngredientSlugRoute: IngredientSlugRoute,
   ResultIdRoute: ResultIdRoute,
