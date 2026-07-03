@@ -5,6 +5,7 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   tanstackStart: {
@@ -12,4 +13,48 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  plugins: [
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: null,
+      filename: "sw.js",
+      devOptions: { enabled: false },
+      manifest: false,
+      workbox: {
+        navigateFallback: "/",
+        navigateFallbackDenylist: [/^\/api\//, /^\/~oauth/, /^\/_server/],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "vegcheck-pages",
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 7 },
+            },
+          },
+          {
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\.(?:js|css|woff2)$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "vegcheck-assets",
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\.(?:png|svg|ico|jpg|jpeg|webp)$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "vegcheck-images",
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
+      },
+    }),
+  ],
 });
