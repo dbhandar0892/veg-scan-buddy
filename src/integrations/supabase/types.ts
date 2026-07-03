@@ -14,13 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ingredients: {
+        Row: {
+          aliases: string[]
+          category: string
+          created_at: string
+          e_number: string | null
+          explanation: string
+          id: string
+          name: string
+          slug: string
+          source: string | null
+          vegan: boolean | null
+          vegetarian: boolean | null
+        }
+        Insert: {
+          aliases?: string[]
+          category: string
+          created_at?: string
+          e_number?: string | null
+          explanation: string
+          id?: string
+          name: string
+          slug: string
+          source?: string | null
+          vegan?: boolean | null
+          vegetarian?: boolean | null
+        }
+        Update: {
+          aliases?: string[]
+          category?: string
+          created_at?: string
+          e_number?: string | null
+          explanation?: string
+          id?: string
+          name?: string
+          slug?: string
+          source?: string | null
+          vegan?: boolean | null
+          vegetarian?: boolean | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          brand: string | null
+          category: string | null
+          confidence: number
+          created_at: string
+          explanation: string
+          id: string
+          image_url: string | null
+          ingredient_hits: Json
+          ingredients_text: string | null
+          last_analyzed_at: string
+          name: string
+          source: string | null
+          status: string
+          verification: string
+        }
+        Insert: {
+          barcode?: string | null
+          brand?: string | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          explanation: string
+          id?: string
+          image_url?: string | null
+          ingredient_hits?: Json
+          ingredients_text?: string | null
+          last_analyzed_at?: string
+          name: string
+          source?: string | null
+          status: string
+          verification?: string
+        }
+        Update: {
+          barcode?: string | null
+          brand?: string | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          explanation?: string
+          id?: string
+          image_url?: string | null
+          ingredient_hits?: Json
+          ingredients_text?: string | null
+          last_analyzed_at?: string
+          name?: string
+          source?: string | null
+          status?: string
+          verification?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
