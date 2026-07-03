@@ -26,6 +26,20 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return (data ?? []) as KnownIngredient[];
 }
 
+// Self-learning: analyze once, ask AI about unknowns, save them, re-analyze.
+async function analyzeAndLearn(text: string): Promise<AnalysisResult> {
+  const known = await loadKnownIngredients();
+  const first = analyzeText(text, known);
+  const unknownTokens = first.hits
+    .filter((h) => h.slug === null && h.category === "unknown")
+    .map((h) => h.token);
+  if (unknownTokens.length === 0) return first;
+  const { learnUnknownIngredients } = await import("./learn.server");
+  const learned = await learnUnknownIngredients(unknownTokens);
+  if (learned.length === 0) return first;
+  return analyzeText(text, [...known, ...learned]);
+}
+
 export interface AnalyzedProduct {
   id: string;
   barcode: string | null;
@@ -117,8 +131,7 @@ export const lookupBarcode = createServerFn({ method: "POST" })
     const ingredientsText = (p.ingredients_text_en || p.ingredients_text || "").trim();
     if (!ingredientsText) return null;
 
-    const known = await loadKnownIngredients();
-    const analysis = analyzeText(ingredientsText, known);
+    const analysis = await analyzeAndLearn(ingredientsText);
     return upsertProduct(supabase, {
       barcode: data.barcode,
       name: p.product_name || "Unknown Product",
@@ -143,8 +156,7 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<AnalyzedProduct> => {
     const supabase = serverSupabase();
-    const known = await loadKnownIngredients();
-    const analysis = analyzeText(data.text, known);
+    const analysis = await analyzeAndLearn(data.text);
     return upsertProduct(supabase, {
       name: data.name || "Scanned Ingredients",
       ingredients_text: data.text,
@@ -204,8 +216,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
       throw new Error("No ingredient list was detected in the photo.");
     }
     const supabase = serverSupabase();
-    const known = await loadKnownIngredients();
-    const analysis = analyzeText(text, known);
+    const analysis = await analyzeAndLearn(text);
     return upsertProduct(supabase, {
       name: "Scanned Label",
       ingredients_text: text,
