@@ -38,6 +38,7 @@ export interface AnalysisResult {
   confidence: number; // 0-1
   explanation: string;
   hits: IngredientHit[];
+  verification?: "unverified" | "community" | "manufacturer";
 }
 
 const STOPWORDS = new Set([

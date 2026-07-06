@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Heart, Share2 } from "lucide-react";
+import { ArrowLeft, Check, Heart, Share2, Users } from "lucide-react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
@@ -120,6 +120,22 @@ function ResultPage() {
             confidence={Number(product.confidence)}
           />
         </div>
+
+        {product.verification === "manufacturer" ? (
+          <p className="mt-3 flex items-center gap-2 text-sm text-vegan">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-vegan-soft">
+              <Check className="size-3.5 stroke-[3]" aria-hidden />
+            </span>
+            The company confirms this product is vegetarian friendly.
+          </p>
+        ) : product.verification === "community" ? (
+          <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted">
+              <Users className="size-3.5" aria-hidden />
+            </span>
+            Not confirmed by the company; verified by independent sources.
+          </p>
+        ) : null}
 
         {interesting.length > 0 ? (
           <section className="mt-8">

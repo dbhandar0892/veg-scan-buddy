@@ -105,10 +105,17 @@ async function analyzeAndLearn(
             sources: v.sources.slice(0, 3),
           };
         });
-        result = deriveStatusFromHits(patched);
+        const manufacturerConfirmed = verdicts.some((v) => v.manufacturer_confirms);
+        result = {
+          ...deriveStatusFromHits(patched),
+          verification: manufacturerConfirmed ? "manufacturer" : "community",
+        };
       }
 
     }
+  }
+  if (!result.verification) {
+    result = { ...result, verification: "unverified" };
   }
   return result;
 }
@@ -124,6 +131,7 @@ export interface AnalyzedProduct {
   confidence: number;
   explanation: string;
   ingredient_hits: AnalysisResult["hits"];
+  verification: "unverified" | "community" | "manufacturer";
   source: string | null;
   last_analyzed_at: string;
 }
@@ -154,6 +162,7 @@ async function upsertProduct(
     ingredient_hits: data.analysis.hits as unknown as Database["public"]["Tables"] extends Record<string, never>
       ? never
       : never,
+    verification: data.analysis.verification ?? "unverified",
     source: data.source,
     last_analyzed_at: new Date().toISOString(),
   };
