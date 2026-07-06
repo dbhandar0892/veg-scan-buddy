@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
 import { getProduct, type AnalyzedProduct } from "@/lib/vegcheck.functions";
 import { isFavorite, toggleFavorite } from "@/lib/local-store";
-import type { IngredientHit } from "@/lib/analyzer";
+
 
 const productQuery = (id: string) =>
   queryOptions({
