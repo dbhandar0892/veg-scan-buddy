@@ -173,10 +173,10 @@ function ScanPage() {
           Scan Product
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Scan a barcode or take a photo of the ingredients label.
+          Point your camera at the barcode — we'll detect it automatically.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          You can also upload an image from your photo library.
+          No barcode? Tap <span className="font-medium text-foreground">Take Photo</span> to capture the product or its ingredients, or upload an image from your library.
         </p>
       </div>
 
