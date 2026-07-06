@@ -40,16 +40,8 @@ function ResultPage() {
   const [fav, setFav] = useState(false);
   useEffect(() => setFav(isFavorite(product.id)), [product.id]);
 
-  const hits: IngredientHit[] = Array.isArray(product.ingredient_hits)
-    ? (product.ingredient_hits as unknown as IngredientHit[])
-    : [];
-  const interesting = hits.filter(
-    (h) =>
-      h.category === "animal" ||
-      h.category === "unknown" ||
-      h.vegan === false ||
-      (h.sources && h.sources.length > 0),
-  );
+
+
 
   const share = async () => {
     if (typeof navigator !== "undefined" && "share" in navigator) {
