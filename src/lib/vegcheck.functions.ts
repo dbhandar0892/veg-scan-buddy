@@ -422,7 +422,6 @@ export const searchProducts = createServerFn({ method: "POST" })
       });
       if (offResults.length >= 20) break;
     }
-    }
     return { local: localResults, remote: offResults };
   });
 
