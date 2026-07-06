@@ -2,12 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, ScanLine, Type, Loader2, X, CheckCircle2 } from "lucide-react";
+import { Camera, ScanLine, Loader2, X, CheckCircle2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { lookupBarcode, ocrIngredients, analyzeIngredients } from "@/lib/vegcheck.functions";
+import { lookupBarcode, ocrIngredients } from "@/lib/vegcheck.functions";
 import { pushHistory } from "@/lib/local-store";
 
-type Mode = "barcode" | "photo" | "paste";
+type Mode = "barcode" | "photo";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
@@ -30,7 +30,6 @@ function ScanPage() {
             [
               { id: "barcode", label: "Barcode", Icon: ScanLine },
               { id: "photo", label: "Label", Icon: Camera },
-              { id: "paste", label: "Paste", Icon: Type },
             ] as const
           ).map(({ id, label, Icon }) => (
             <button
@@ -50,7 +49,7 @@ function ScanPage() {
       </div>
 
       <div className="mt-6 px-5">
-        {mode === "barcode" ? <BarcodeMode /> : mode === "photo" ? <PhotoMode /> : <PasteMode />}
+        {mode === "barcode" ? <BarcodeMode /> : <PhotoMode />}
       </div>
     </AppShell>
   );
