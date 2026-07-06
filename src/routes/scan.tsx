@@ -2,63 +2,39 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, ScanLine, Loader2, X, CheckCircle2 } from "lucide-react";
+import { Camera, Loader2, X, Upload, Aperture } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { lookupBarcode, ocrIngredients } from "@/lib/vegcheck.functions";
 import { pushHistory } from "@/lib/local-store";
-
-type Mode = "barcode" | "photo";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
 });
 
+type Status =
+  | "idle"
+  | "starting"
+  | "scanning"
+  | "looking-up"
+  | "analyzing"
+  | "error";
+
 function ScanPage() {
-  const [mode, setMode] = useState<Mode>("barcode");
-  return (
-    <AppShell>
-      <div className="px-5 pt-8">
-        <h1 className="font-display text-3xl tracking-tight text-foreground">Scan a product</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          We only tell you the truth. Never a guess.
-        </p>
-      </div>
-
-      <div className="mt-5 px-5">
-        <div className="flex gap-1 rounded-2xl bg-muted p-1">
-          {(
-            [
-              { id: "barcode", label: "Barcode", Icon: ScanLine },
-              { id: "photo", label: "Photo", Icon: Camera },
-
-            ] as const
-          ).map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              onClick={() => setMode(id)}
-              className={[
-                "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                mode === id
-                  ? "bg-background text-foreground shadow-soft"
-                  : "text-muted-foreground",
-              ].join(" ")}
-            >
-              <Icon className="size-4" /> {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-6 px-5">
-        {mode === "barcode" ? <BarcodeMode /> : <PhotoMode />}
-      </div>
-    </AppShell>
-  );
-}
-
-function useAfterAnalyze() {
   const navigate = useNavigate();
-  return (p: {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const busyRef = useRef(false);
+
+  const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [manual, setManual] = useState("");
+
+  const lookup = useServerFn(lookupBarcode);
+  const ocr = useServerFn(ocrIngredients);
+
+  const done = (p: {
     id: string;
     barcode: string | null;
     name: string;
@@ -77,36 +53,37 @@ function useAfterAnalyze() {
     });
     navigate({ to: "/result/$id", params: { id: p.id } });
   };
-}
 
-function BarcodeMode() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const [status, setStatus] = useState<"idle" | "scanning" | "looking-up" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [manual, setManual] = useState("");
-  const lookup = useServerFn(lookupBarcode);
-  const done = useAfterAnalyze();
+  const stopCamera = () => {
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+  };
 
   const start = async () => {
     setError(null);
-    setStatus("scanning");
+    setStatus("starting");
     try {
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromVideoDevice(
         undefined,
         videoRef.current!,
         async (result) => {
-          if (!result) return;
-          controlsRef.current?.stop();
-          controlsRef.current = null;
+          if (!result || busyRef.current) return;
+          busyRef.current = true;
+          stopCamera();
           await handleBarcode(result.getText());
+          busyRef.current = false;
         },
       );
       controlsRef.current = controls;
+      setStatus("scanning");
     } catch (e) {
       setStatus("error");
-      setError(e instanceof Error ? e.message : "Camera unavailable");
+      setError(
+        e instanceof Error
+          ? "Couldn't access your camera. You can still upload a photo."
+          : "Camera unavailable",
+      );
     }
   };
 
@@ -116,7 +93,9 @@ function BarcodeMode() {
       const product = await lookup({ data: { barcode: code } });
       if (!product) {
         setStatus("error");
-        setError(`No product found for ${code}. Try scanning the label instead.`);
+        setError(
+          `No product found for ${code}. Take a photo of the product or its ingredients instead.`,
+        );
         return;
       }
       done(product);
@@ -126,101 +105,9 @@ function BarcodeMode() {
     }
   };
 
-  useEffect(() => {
-    return () => controlsRef.current?.stop();
-  }, []);
-
-  return (
-    <div>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-black shadow-card">
-        <video
-          ref={videoRef}
-          className="size-full object-cover"
-          playsInline
-          muted
-          autoPlay
-        />
-        {status === "idle" ? (
-          <div className="absolute inset-0 grid place-items-center bg-gradient-to-b from-black/40 to-black/70 text-white">
-            <button
-              onClick={start}
-              className="flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow-pop"
-            >
-              <Camera className="size-4" /> Start camera
-            </button>
-          </div>
-        ) : null}
-        {status === "scanning" ? (
-          <>
-            <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
-              Point at a barcode
-            </div>
-          </>
-        ) : null}
-        {status === "looking-up" ? (
-          <div className="absolute inset-0 grid place-items-center bg-background/80">
-            <div className="flex items-center gap-2 text-sm text-foreground">
-              <Loader2 className="size-4 animate-spin" /> Looking it up…
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {error ? (
-        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-danger-soft p-3 text-sm text-danger">
-          <X className="mt-0.5 size-4" /> <span>{error}</span>
-        </div>
-      ) : null}
-
-      <div className="mt-5">
-        <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Or enter the barcode
-        </label>
-        <form
-          className="mt-2 flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (manual.trim()) handleBarcode(manual.trim());
-          }}
-        >
-          <input
-            inputMode="numeric"
-            value={manual}
-            onChange={(e) => setManual(e.target.value.replace(/\D/g, ""))}
-            placeholder="e.g. 3017620422003"
-            className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            type="submit"
-            className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
-          >
-            Check
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function PhotoMode() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const ocr = useServerFn(ocrIngredients);
-  const done = useAfterAnalyze();
-
-  const onFile = (f: File | null) => {
-    setError(null);
-    setFile(f);
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(f ? URL.createObjectURL(f) : null);
-  };
-
-  const submit = async () => {
-    if (!file) return;
-    setBusy(true);
+  const handleImage = async (file: File) => {
+    stopCamera();
+    setStatus("analyzing");
     setError(null);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -237,54 +124,188 @@ function PhotoMode() {
       });
       done(product);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not read the label");
-    } finally {
-      setBusy(false);
+      setStatus("error");
+      setError(
+        e instanceof Error
+          ? "No barcode or readable ingredient list was detected. Try a clearer photo with better lighting."
+          : "Couldn't read the image",
+      );
     }
   };
 
+  const capturePhoto = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) {
+      fileInputRef.current?.click();
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const blob = await new Promise<Blob | null>((r) =>
+      canvas.toBlob((b) => r(b), "image/jpeg", 0.9),
+    );
+    if (!blob) return;
+    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+    await handleImage(file);
+  };
+
+  useEffect(() => {
+    start();
+    return () => stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const retry = () => {
+    setError(null);
+    start();
+  };
+
+  const busy = status === "looking-up" || status === "analyzing";
+
   return (
-    <div>
-      <label className="block aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed border-border bg-muted/40">
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Product photo" className="size-full object-cover" />
-        ) : (
-          <div className="grid h-full place-items-center text-center">
-            <div>
-              <Camera className="mx-auto size-8 text-muted-foreground" />
-              <div className="mt-3 text-sm font-medium text-foreground">
-                Take or upload a photo
+    <AppShell>
+      <div className="px-5 pt-8">
+        <h1 className="font-display text-3xl tracking-tight text-foreground">
+          Scan Product
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Scan a barcode or take a photo of the ingredients label.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          You can also upload an image from your photo library.
+        </p>
+      </div>
+
+      <div className="mt-6 px-5">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-black shadow-card">
+          <video
+            ref={videoRef}
+            className="size-full object-cover"
+            playsInline
+            muted
+            autoPlay
+          />
+
+          {status === "scanning" ? (
+            <>
+              <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
+                Point at a barcode — or tap the shutter for a photo
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                of the product or its ingredient label
+            </>
+          ) : null}
+
+          {status === "starting" || status === "idle" ? (
+            <div className="absolute inset-0 grid place-items-center bg-gradient-to-b from-black/40 to-black/70 text-white text-sm">
+              <div className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" /> Starting camera…
               </div>
             </div>
-          </div>
-        )}
+          ) : null}
+
+          {busy ? (
+            <div className="absolute inset-0 grid place-items-center bg-background/85">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                {status === "looking-up" ? "Looking it up…" : "Analyzing photo…"}
+              </div>
+            </div>
+          ) : null}
+
+          {status === "error" ? (
+            <div className="absolute inset-0 grid place-items-center bg-background/90 px-6 text-center">
+              <div>
+                <div className="mx-auto grid size-10 place-items-center rounded-full bg-danger-soft text-danger">
+                  <X className="size-5" />
+                </div>
+                <p className="mt-3 text-sm text-foreground">{error}</p>
+                <button
+                  onClick={retry}
+                  className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={busy}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
+          >
+            <Upload className="size-4" /> Upload Photo
+          </button>
+          <button
+            onClick={capturePhoto}
+            disabled={busy || status !== "scanning"}
+            aria-label="Take photo"
+            className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-pop disabled:opacity-50"
+          >
+            <Aperture className="size-6" />
+          </button>
+        </div>
+
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleImage(f);
+            e.target.value = "";
+          }}
         />
-      </label>
+        <input
+          ref={uploadInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleImage(f);
+            e.target.value = "";
+          }}
+        />
 
-      {error ? (
-        <div className="mt-3 rounded-2xl bg-danger-soft p-3 text-sm text-danger">{error}</div>
-      ) : null}
-
-      <button
-        disabled={!file || busy}
-        onClick={submit}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-      >
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        {busy ? "Analyzing photo…" : "Analyze photo"}
-      </button>
-
-    </div>
+        <div className="mt-6">
+          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Or enter the barcode
+          </label>
+          <form
+            className="mt-2 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (manual.trim()) {
+                stopCamera();
+                handleBarcode(manual.trim());
+              }
+            }}
+          >
+            <input
+              inputMode="numeric"
+              value={manual}
+              onChange={(e) => setManual(e.target.value.replace(/\D/g, ""))}
+              placeholder="e.g. 3017620422003"
+              className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="submit"
+              className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+            >
+              Check
+            </button>
+          </form>
+        </div>
+      </div>
+    </AppShell>
   );
 }
-
