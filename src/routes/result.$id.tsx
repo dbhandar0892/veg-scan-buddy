@@ -151,27 +151,8 @@ function ResultPage() {
   );
 }
 
-function CategoryBadge({ category }: { category: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    animal: { label: "Animal", cls: "bg-danger-soft text-danger" },
-    plant: { label: "Plant", cls: "bg-vegan-soft text-vegan" },
-    microbial: { label: "Microbial", cls: "bg-vegan-soft text-vegan" },
-    mineral: { label: "Mineral", cls: "bg-muted text-muted-foreground" },
-    synthetic: { label: "Synthetic", cls: "bg-muted text-muted-foreground" },
-    unknown: { label: "Unclear", cls: "bg-warn-soft text-warn-foreground" },
-  };
-  const m = map[category] ?? map.unknown;
-  return (
-    <span
-      className={[
-        "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
-        m.cls,
-      ].join(" ")}
-    >
-      {m.label}
-    </span>
-  );
-}
+
+
 
 function historyItemFrom(p: AnalyzedProduct) {
   return {
