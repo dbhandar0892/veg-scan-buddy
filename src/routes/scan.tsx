@@ -173,10 +173,10 @@ function ScanPage() {
           Scan Product
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Scan a barcode or take a photo of the ingredients label.
+          Point your camera at the barcode — we'll detect it automatically.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          You can also upload an image from your photo library.
+          No barcode? Tap <span className="font-medium text-foreground">Take Photo</span> to capture the product or its ingredients, or upload an image from your library.
         </p>
       </div>
 
@@ -194,7 +194,7 @@ function ScanPage() {
             <>
               <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
               <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
-                Point at a barcode — or tap the shutter for a photo
+                Center the barcode in the frame — or tap Take Photo below
               </div>
             </>
           ) : null}
@@ -234,23 +234,25 @@ function ScanPage() {
           ) : null}
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={busy}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
-          >
-            <Upload className="size-4" /> Upload Photo
-          </button>
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={capturePhoto}
             disabled={busy || status !== "scanning"}
-            aria-label="Take photo"
-            className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-pop disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-pop disabled:opacity-50"
           >
-            <Aperture className="size-6" />
+            <Aperture className="size-4" /> Take Photo
+          </button>
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={busy}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
+          >
+            <Upload className="size-4" /> Upload Photo
           </button>
         </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Take Photo captures whatever your camera sees now — the whole product or just its ingredients.
+        </p>
 
         <input
           ref={fileInputRef}
