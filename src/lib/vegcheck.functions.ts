@@ -369,13 +369,17 @@ export const searchProducts = createServerFn({ method: "POST" })
       confidence: number;
     }>;
 
-    // Query Open Food Facts. Run the modern v2 search AND the legacy CGI
-    // search in parallel — v2 is more reliable but CGI still returns hits for
-    // some brand/name combos v2 misses. Merge and dedupe by barcode.
+    // Query Open Food Facts. Prefer the modern search-a-licious endpoint
+    // (much better full-text ranking), and fall back to the legacy v2 and
+    // CGI search endpoints. Merge and dedupe by barcode.
     const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
     const fields = "code,product_name,brands,image_front_small_url,image_small_url";
     const encoded = encodeURIComponent(q);
-    const [v2Res, cgiRes] = await Promise.all([
+    const [salRes, v2Res, cgiRes] = await Promise.all([
+      fetch(
+        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=20&fields=${fields}`,
+        { headers },
+      ).catch(() => null),
       fetch(
         `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=20&fields=${fields}`,
         { headers },
@@ -389,11 +393,19 @@ export const searchProducts = createServerFn({ method: "POST" })
     type OffProduct = {
       code?: string;
       product_name?: string;
-      brands?: string;
+      brands?: string | string[];
       image_front_small_url?: string;
       image_small_url?: string;
     };
     const collected: OffProduct[] = [];
+    if (salRes && salRes.ok) {
+      try {
+        const j = (await salRes.json()) as { hits?: OffProduct[] };
+        if (j.hits) collected.push(...j.hits);
+      } catch {
+        // ignore
+      }
+    }
     for (const res of [v2Res, cgiRes]) {
       if (!res || !res.ok) continue;
       try {
@@ -412,12 +424,18 @@ export const searchProducts = createServerFn({ method: "POST" })
     }> = [];
     for (const p of collected) {
       if (!p.code || !p.product_name) continue;
-      if (seen.has(p.code)) continue;
-      seen.add(p.code);
+      // search-a-licious returns barcodes zero-padded to 13 digits. Strip
+      // leading zeros so barcode lookups match the OFF product API.
+      const barcode = p.code.replace(/^0+/, "") || p.code;
+      if (seen.has(barcode)) continue;
+      seen.add(barcode);
+      const brand = Array.isArray(p.brands)
+        ? p.brands.filter(Boolean).join(", ") || null
+        : (p.brands ?? null);
       offResults.push({
-        barcode: p.code,
+        barcode,
         name: p.product_name,
-        brand: p.brands ?? null,
+        brand,
         image_url: p.image_front_small_url ?? p.image_small_url ?? null,
       });
       if (offResults.length >= 20) break;
