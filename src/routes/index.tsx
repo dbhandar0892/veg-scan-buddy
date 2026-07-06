@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ScanLine, Search, ArrowRight, Sparkles } from "lucide-react";
+import { ScanLine, Search, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 
@@ -15,7 +15,13 @@ function HomePage() {
     <AppShell>
       <div className="px-5 pt-10">
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary">
-          <Sparkles className="size-3.5" />
+          <img
+            src="/icon-512.png"
+            alt=""
+            className="size-7 rounded-lg"
+            width={28}
+            height={28}
+          />
           VegCheck
         </div>
         <h1 className="mt-3 font-display text-[42px] leading-[1.05] tracking-tight text-foreground">
