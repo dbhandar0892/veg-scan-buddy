@@ -44,7 +44,11 @@ function ResultPage() {
     ? (product.ingredient_hits as unknown as IngredientHit[])
     : [];
   const interesting = hits.filter(
-    (h) => h.category === "animal" || h.category === "unknown" || h.vegan === false,
+    (h) =>
+      h.category === "animal" ||
+      h.category === "unknown" ||
+      h.vegan === false ||
+      (h.sources && h.sources.length > 0),
   );
 
   const share = async () => {
