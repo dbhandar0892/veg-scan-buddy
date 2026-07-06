@@ -105,10 +105,17 @@ async function analyzeAndLearn(
             sources: v.sources.slice(0, 3),
           };
         });
-        result = deriveStatusFromHits(patched);
+        const manufacturerConfirmed = verdicts.some((v) => v.manufacturer_confirms);
+        result = {
+          ...deriveStatusFromHits(patched),
+          verification: manufacturerConfirmed ? "manufacturer" : "community",
+        };
       }
 
     }
+  }
+  if (!result.verification) {
+    result = { ...result, verification: "unverified" };
   }
   return result;
 }
