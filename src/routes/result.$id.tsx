@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Heart, Share2 } from "lucide-react";
+import { ArrowLeft, Check, Heart, Share2, Users } from "lucide-react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
