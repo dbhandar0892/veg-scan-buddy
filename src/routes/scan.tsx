@@ -2,12 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, ScanLine, Type, Loader2, X, CheckCircle2 } from "lucide-react";
+import { Camera, ScanLine, Loader2, X, CheckCircle2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { lookupBarcode, ocrIngredients, analyzeIngredients } from "@/lib/vegcheck.functions";
+import { lookupBarcode, ocrIngredients } from "@/lib/vegcheck.functions";
 import { pushHistory } from "@/lib/local-store";
 
-type Mode = "barcode" | "photo" | "paste";
+type Mode = "barcode" | "photo";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
@@ -30,7 +30,6 @@ function ScanPage() {
             [
               { id: "barcode", label: "Barcode", Icon: ScanLine },
               { id: "photo", label: "Label", Icon: Camera },
-              { id: "paste", label: "Paste", Icon: Type },
             ] as const
           ).map(({ id, label, Icon }) => (
             <button
@@ -50,7 +49,7 @@ function ScanPage() {
       </div>
 
       <div className="mt-6 px-5">
-        {mode === "barcode" ? <BarcodeMode /> : mode === "photo" ? <PhotoMode /> : <PasteMode />}
+        {mode === "barcode" ? <BarcodeMode /> : <PhotoMode />}
       </div>
     </AppShell>
   );
@@ -287,56 +286,3 @@ function PhotoMode() {
   );
 }
 
-function PasteMode() {
-  const [text, setText] = useState("");
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const analyze = useServerFn(analyzeIngredients);
-  const done = useAfterAnalyze();
-
-  const submit = async () => {
-    if (!text.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const product = await analyze({
-        data: { text: text.trim(), name: name.trim() || undefined },
-      });
-      done(product);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not analyze");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Product name (optional)"
-        className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Paste the ingredient list here…"
-        rows={8}
-        className="mt-3 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      {error ? (
-        <div className="mt-3 rounded-2xl bg-danger-soft p-3 text-sm text-danger">{error}</div>
-      ) : null}
-      <button
-        disabled={!text.trim() || busy}
-        onClick={submit}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-      >
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        Analyze
-      </button>
-    </div>
-  );
-}
