@@ -248,7 +248,7 @@ function PhotoMode() {
       <label className="block aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed border-border bg-muted/40">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Ingredient label" className="size-full object-cover" />
+          <img src={preview} alt="Product photo" className="size-full object-cover" />
         ) : (
           <div className="grid h-full place-items-center text-center">
             <div>
@@ -257,7 +257,7 @@ function PhotoMode() {
                 Take or upload a photo
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                of the ingredient list
+                of the product or its ingredient label
               </div>
             </div>
           </div>
@@ -281,8 +281,9 @@ function PhotoMode() {
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        {busy ? "Reading label…" : "Analyze ingredients"}
+        {busy ? "Analyzing photo…" : "Analyze photo"}
       </button>
+
     </div>
   );
 }
