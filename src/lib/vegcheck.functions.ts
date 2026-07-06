@@ -162,6 +162,7 @@ async function upsertProduct(
     ingredient_hits: data.analysis.hits as unknown as Database["public"]["Tables"] extends Record<string, never>
       ? never
       : never,
+    verification: data.analysis.verification ?? "unverified",
     source: data.source,
     last_analyzed_at: new Date().toISOString(),
   };
