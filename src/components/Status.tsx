@@ -1,4 +1,5 @@
 import type { Status } from "@/lib/analyzer";
+import { Check } from "lucide-react";
 
 const map: Record<
   Status,
