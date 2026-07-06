@@ -29,7 +29,8 @@ function ScanPage() {
           {(
             [
               { id: "barcode", label: "Barcode", Icon: ScanLine },
-              { id: "photo", label: "Label", Icon: Camera },
+              { id: "photo", label: "Photo", Icon: Camera },
+
             ] as const
           ).map(({ id, label, Icon }) => (
             <button
