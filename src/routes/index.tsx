@@ -1,25 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ScanLine, Search, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ScanLine, Search, ArrowRight, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { StatusPill } from "@/components/Status";
-import { getHistory, type HistoryItem } from "@/lib/local-store";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
-  const [recent, setRecent] = useState<HistoryItem[]>([]);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const load = () => setRecent(getHistory().slice(0, 5));
-    load();
-    window.addEventListener("vegcheck:history", load);
-    return () => window.removeEventListener("vegcheck:history", load);
-  }, []);
 
   return (
     <AppShell>
@@ -69,60 +59,6 @@ function HomePage() {
           />
         </label>
       </form>
-
-      <section className="mt-10 px-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-            Recent scans
-          </h2>
-          {recent.length > 0 ? (
-            <Link to="/history" className="text-xs font-medium text-primary">
-              See all
-            </Link>
-          ) : null}
-        </div>
-        {recent.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card/50 p-6 text-center">
-            <ShieldCheck className="mx-auto size-8 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              Your recent scans will appear here.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {recent.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to="/result/$id"
-                  params={{ id: item.id }}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft"
-                >
-                  <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-                    {item.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.image_url}
-                        alt=""
-                        className="size-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {item.name}
-                    </div>
-                    {item.brand ? (
-                      <div className="truncate text-xs text-muted-foreground">{item.brand}</div>
-                    ) : null}
-                  </div>
-                  <StatusPill status={item.status} size="sm" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </AppShell>
   );
 }
