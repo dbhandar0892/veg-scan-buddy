@@ -151,6 +151,7 @@ export interface ResearchVerdict {
   confidence: number;
   explanation: string;
   sources: string[];
+  manufacturer_confirms?: boolean;
 }
 
 /**
