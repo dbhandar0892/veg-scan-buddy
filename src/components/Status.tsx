@@ -1,4 +1,5 @@
 import type { Status } from "@/lib/analyzer";
+import { Check } from "lucide-react";
 
 const map: Record<
   Status,
@@ -106,6 +107,9 @@ export function StatusHero({
         <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", m.bg, m.fg, m.ring].join(" ")}>
           <span className={["size-2 rounded-full", m.dot].join(" ")} aria-hidden />
           {m.label}
+          {(status === "vegetarian" || status === "vegan") ? (
+            <Check className="size-3.5 stroke-[3]" aria-hidden />
+          ) : null}
         </span>
         <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
           <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
