@@ -137,68 +137,8 @@ function ResultPage() {
           </p>
         ) : null}
 
-        {interesting.length > 0 ? (
-          <section className="mt-8">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Ingredients of interest
-            </h2>
-            <ul className="mt-3 space-y-2">
-              {interesting.map((h, idx) => (
-                <li key={`${h.slug ?? h.token}-${idx}`}>
-                  <div className="rounded-2xl border border-border bg-card p-3 shadow-soft">
-                    {h.slug ? (
-                      <Link
-                        to="/ingredient/$slug"
-                        params={{ slug: h.slug }}
-                        className="flex items-center gap-3"
-                      >
-                        <CategoryBadge category={h.category} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-foreground">{h.name}</div>
-                          <div className="text-xs text-muted-foreground">{h.explanation}</div>
-                        </div>
-                      </Link>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <CategoryBadge category={h.category} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-foreground">{h.name}</div>
-                          <div className="text-xs text-muted-foreground">{h.explanation}</div>
-                        </div>
-                      </div>
-                    )}
-                    {h.sources && h.sources.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          Confirmed by
-                        </span>
-                        {h.sources.slice(0, 3).map((s, i) => {
-                          let host = s;
-                          try {
-                            host = new URL(s).hostname.replace(/^www\./, "");
-                          } catch {
-                            /* noop */
-                          }
-                          return (
-                            <a
-                              key={i}
-                              href={s}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className="rounded-full bg-vegan-soft px-2 py-0.5 text-[10px] font-medium text-vegan hover:underline"
-                            >
-                              {host}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+
+
 
         {product.ingredients_text ? (
           <details className="mt-6 rounded-2xl border border-border bg-card p-4">
