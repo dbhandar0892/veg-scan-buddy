@@ -283,7 +283,10 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
     });
   });
 
-// -------- OCR ingredient label via Lovable AI (Gemini multimodal) --------
+// -------- Analyze a photo: works for either an ingredient label OR a product shot --------
+// The AI first tries to read the ingredient list. If none is visible (e.g. the
+// user photographed the front of the package), it identifies the product by
+// name/brand so we can look it up in Open Food Facts.
 export const ocrIngredients = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
@@ -308,12 +311,17 @@ export const ocrIngredients = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              "You extract the ingredients list from a photo of a food label. Return ONLY the ingredients as a comma-separated list, verbatim from the label. If you cannot see an ingredient list, respond with the single word: NONE.",
+              'You analyze a photo of a food product. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
+              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string, or null if not clearly visible. ' +
+              '"product_name" = the product name printed on the packaging, or null. ' +
+              '"brand" = the brand/manufacturer name, or null. ' +
+              '"barcode" = the digits of the barcode if clearly visible, else null. ' +
+              "No prose, no code fences, JSON only.",
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract the ingredient list." },
+              { type: "text", text: "Identify this product." },
               {
                 type: "image_url",
                 image_url: { url: `data:${data.mime};base64,${data.imageBase64}` },
@@ -325,23 +333,107 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     });
     if (res.status === 429) throw new Error("Rate limited. Please try again in a moment.");
     if (res.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
-    if (!res.ok) throw new Error(`OCR failed (${res.status})`);
+    if (!res.ok) throw new Error(`Photo analysis failed (${res.status})`);
     const json = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
     };
-    const text = json.choices?.[0]?.message?.content?.trim() ?? "";
-    if (!text || text.toUpperCase() === "NONE") {
-      throw new Error("No ingredient list was detected in the photo.");
+    const raw = json.choices?.[0]?.message?.content?.trim() ?? "";
+    const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+    let parsed: {
+      ingredients?: string | null;
+      product_name?: string | null;
+      brand?: string | null;
+      barcode?: string | null;
+    } = {};
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      if (cleaned && cleaned.toUpperCase() !== "NONE") {
+        parsed = { ingredients: cleaned };
+      }
     }
-    const supabase = serverSupabase();
-    const analysis = await analyzeAndLearn(text);
-    return upsertProduct(supabase, {
-      name: "Scanned Label",
-      ingredients_text: text,
-      analysis,
-      source: "ocr",
-    });
+
+    const ingredients = (parsed.ingredients ?? "").trim();
+    const productName = (parsed.product_name ?? "").trim();
+    const brand = (parsed.brand ?? "").trim();
+    const barcode = (parsed.barcode ?? "").replace(/\D/g, "");
+
+    // 1) Barcode visible? Use the reliable Open Food Facts lookup.
+    if (barcode && barcode.length >= 8) {
+      const viaBarcode = await lookupBarcode({ data: { barcode } });
+      if (viaBarcode) return viaBarcode;
+    }
+
+    // 2) Ingredient list visible? Analyze it directly.
+    if (ingredients && ingredients.length > 3) {
+      const supabase = serverSupabase();
+      const analysis = await analyzeAndLearn(ingredients, {
+        brand: brand || null,
+        productName: productName || null,
+      });
+      return upsertProduct(supabase, {
+        name: productName || "Scanned Label",
+        brand: brand || null,
+        ingredients_text: ingredients,
+        analysis,
+        source: "ocr",
+      });
+    }
+
+    // 3) Only front-of-package info? Search Open Food Facts by name+brand.
+    const searchTerm = [brand, productName].filter(Boolean).join(" ").trim();
+    if (searchTerm) {
+      const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
+      const encoded = encodeURIComponent(searchTerm);
+      const candidates: string[] = [];
+      const salRes = await fetch(
+        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=5&fields=code`,
+        { headers },
+      ).catch(() => null);
+      if (salRes && salRes.ok) {
+        try {
+          const j = (await salRes.json()) as { hits?: { code?: string }[] };
+          for (const h of j.hits ?? []) {
+            if (h.code) candidates.push(h.code.replace(/^0+/, "") || h.code);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (candidates.length === 0) {
+        const v2Res = await fetch(
+          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=5&fields=code`,
+          { headers },
+        ).catch(() => null);
+        if (v2Res && v2Res.ok) {
+          try {
+            const j = (await v2Res.json()) as { products?: { code?: string }[] };
+            for (const p of j.products ?? []) {
+              if (p.code) candidates.push(p.code.replace(/^0+/, "") || p.code);
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      for (const code of candidates) {
+        try {
+          const product = await lookupBarcode({ data: { barcode: code } });
+          if (product) return product;
+        } catch {
+          // try next candidate
+        }
+      }
+      throw new Error(
+        `We recognized "${searchTerm}" but couldn't find its ingredient list. Try a photo of the ingredient label.`,
+      );
+    }
+
+    throw new Error(
+      "We couldn't recognize the product or read an ingredient list. Try a clearer, well-lit photo.",
+    );
   });
+
 
 // -------- Search products --------
 export const searchProducts = createServerFn({ method: "POST" })
