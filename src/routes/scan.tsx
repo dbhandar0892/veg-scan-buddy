@@ -194,7 +194,7 @@ function ScanPage() {
             <>
               <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
               <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
-                Point at a barcode — or tap the shutter for a photo
+                Center the barcode in the frame — or tap Take Photo below
               </div>
             </>
           ) : null}
