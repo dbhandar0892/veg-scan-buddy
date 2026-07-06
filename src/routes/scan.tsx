@@ -234,23 +234,25 @@ function ScanPage() {
           ) : null}
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={busy}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
-          >
-            <Upload className="size-4" /> Upload Photo
-          </button>
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={capturePhoto}
             disabled={busy || status !== "scanning"}
-            aria-label="Take photo"
-            className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-pop disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-pop disabled:opacity-50"
           >
-            <Aperture className="size-6" />
+            <Aperture className="size-4" /> Take Photo
+          </button>
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={busy}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
+          >
+            <Upload className="size-4" /> Upload Photo
           </button>
         </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Take Photo captures whatever your camera sees now — the whole product or just its ingredients.
+        </p>
 
         <input
           ref={fileInputRef}
