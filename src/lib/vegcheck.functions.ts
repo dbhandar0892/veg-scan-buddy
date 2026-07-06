@@ -349,11 +349,15 @@ export const searchProducts = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
+    const q = data.query.trim();
+    // Escape PostgREST reserved chars for .or() filter values.
+    const safe = q.replace(/[,()"']/g, " ").trim();
+    const pattern = `%${safe}%`;
     const local = await client
       .from("products")
       .select("id,barcode,name,brand,image_url,status,confidence")
-      .ilike("name", `%${data.query}%`)
-      .limit(10);
+      .or(`name.ilike.${pattern},brand.ilike.${pattern}`)
+      .limit(15);
 
     const localResults = (local.data ?? []) as Array<{
       id: string;
@@ -365,34 +369,59 @@ export const searchProducts = createServerFn({ method: "POST" })
       confidence: number;
     }>;
 
-    // Also query Open Food Facts for discovery
-    const off = await fetch(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(data.query)}&search_simple=1&json=1&page_size=12&fields=code,product_name,brands,image_front_small_url,ingredients_text_en`,
-      { headers: { "User-Agent": "VegCheck/1.0" } },
-    ).catch(() => null);
-    let offResults: Array<{
+    // Query Open Food Facts. Run the modern v2 search AND the legacy CGI
+    // search in parallel — v2 is more reliable but CGI still returns hits for
+    // some brand/name combos v2 misses. Merge and dedupe by barcode.
+    const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
+    const fields = "code,product_name,brands,image_front_small_url,image_small_url";
+    const encoded = encodeURIComponent(q);
+    const [v2Res, cgiRes] = await Promise.all([
+      fetch(
+        `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=20&fields=${fields}`,
+        { headers },
+      ).catch(() => null),
+      fetch(
+        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encoded}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`,
+        { headers },
+      ).catch(() => null),
+    ]);
+
+    type OffProduct = {
+      code?: string;
+      product_name?: string;
+      brands?: string;
+      image_front_small_url?: string;
+      image_small_url?: string;
+    };
+    const collected: OffProduct[] = [];
+    for (const res of [v2Res, cgiRes]) {
+      if (!res || !res.ok) continue;
+      try {
+        const j = (await res.json()) as { products?: OffProduct[] };
+        if (j.products) collected.push(...j.products);
+      } catch {
+        // ignore malformed responses
+      }
+    }
+    const seen = new Set<string>();
+    const offResults: Array<{
       barcode: string;
       name: string;
       brand: string | null;
       image_url: string | null;
     }> = [];
-    if (off && off.ok) {
-      const j = (await off.json()) as {
-        products?: {
-          code?: string;
-          product_name?: string;
-          brands?: string;
-          image_front_small_url?: string;
-        }[];
-      };
-      offResults = (j.products ?? [])
-        .filter((p) => p.code && p.product_name)
-        .map((p) => ({
-          barcode: p.code!,
-          name: p.product_name!,
-          brand: p.brands ?? null,
-          image_url: p.image_front_small_url ?? null,
-        }));
+    for (const p of collected) {
+      if (!p.code || !p.product_name) continue;
+      if (seen.has(p.code)) continue;
+      seen.add(p.code);
+      offResults.push({
+        barcode: p.code,
+        name: p.product_name,
+        brand: p.brands ?? null,
+        image_url: p.image_front_small_url ?? p.image_small_url ?? null,
+      });
+      if (offResults.length >= 20) break;
+    }
     }
     return { local: localResults, remote: offResults };
   });
