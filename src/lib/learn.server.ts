@@ -180,6 +180,7 @@ Return ONLY JSON matching:
 {"verdicts":[{"token":string,"vegan":boolean|null,"vegetarian":boolean|null,"confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}]}
 - explanation: <=35 words, plain English, mention the source in prose.
 - sources: up to 3 URLs actually used.
+- manufacturer_confirms: true only if the manufacturer's official website or customer service explicitly confirms the status for this product.
 - confidence: 0.0-1.0. Use <=0.5 if still uncertain.`;
 
   const user = `Product: ${productLine}
