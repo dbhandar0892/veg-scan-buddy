@@ -58,6 +58,34 @@ export function StatusPill({ status, size = "md" }: { status: Status; size?: "sm
   );
 }
 
+const veganMap: Record<
+  Status,
+  { label: string; dot: string; ring: string; bg: string; fg: string }
+> = {
+  vegan: map.vegan,
+  vegetarian: {
+    label: "Not vegan",
+    dot: "bg-danger",
+    ring: "ring-danger/30",
+    bg: "bg-danger-soft",
+    fg: "text-danger",
+  },
+  not_vegetarian: {
+    label: "Not vegan",
+    dot: "bg-danger",
+    ring: "ring-danger/30",
+    bg: "bg-danger-soft",
+    fg: "text-danger",
+  },
+  unknown: {
+    label: "Vegan status unknown",
+    dot: "bg-warn",
+    ring: "ring-warn/30",
+    bg: "bg-warn-soft",
+    fg: "text-warn-foreground",
+  },
+};
+
 export function StatusHero({
   status,
   explanation,
@@ -68,15 +96,20 @@ export function StatusHero({
   confidence: number;
 }) {
   const m = map[status];
+  const vm = veganMap[status];
   const pct = Math.round(confidence * 100);
   const confLabel =
     pct >= 90 ? "Very high confidence" : pct >= 70 ? "High confidence" : pct >= 50 ? "Moderate confidence" : "Low confidence";
   return (
     <div className={["rounded-3xl p-6 shadow-soft ring-1", m.bg, m.ring].join(" ")}>
-      <div className="flex items-center gap-3">
-        <span className={["size-3 rounded-full", m.dot].join(" ")} aria-hidden />
-        <span className={["text-sm font-medium uppercase tracking-widest", m.fg].join(" ")}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", m.bg, m.fg, m.ring].join(" ")}>
+          <span className={["size-2 rounded-full", m.dot].join(" ")} aria-hidden />
           {m.label}
+        </span>
+        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
+          <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
+          {vm.label}
         </span>
       </div>
       <p className="mt-4 font-display text-3xl leading-tight text-foreground">{explanation}</p>
