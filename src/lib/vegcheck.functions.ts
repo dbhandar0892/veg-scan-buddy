@@ -124,6 +124,7 @@ export interface AnalyzedProduct {
   confidence: number;
   explanation: string;
   ingredient_hits: AnalysisResult["hits"];
+  verification: "unverified" | "community" | "manufacturer";
   source: string | null;
   last_analyzed_at: string;
 }
