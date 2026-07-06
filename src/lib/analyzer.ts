@@ -143,9 +143,16 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   } else if (hasUnknownIng || unknownCount > 0) {
     status = "unknown";
     const uh = hits.find((h) => h.category === "unknown" || h.vegan === null);
-    explanation = uh
-      ? `Contains ${uh.name.toLowerCase()} which can be animal or plant.`
-      : "Some ingredients could not be confirmed.";
+    if (uh) {
+      const name = uh.name.toLowerCase();
+      const detail =
+        uh.explanation && uh.explanation !== "Not in our ingredient database yet."
+          ? uh.explanation
+          : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
+      explanation = `"${name}" needs a closer look. ${detail}`;
+    } else {
+      explanation = "Some ingredients couldn't be confirmed against the manufacturer's listing.";
+    }
   } else if (hasDairyEggHoney) {
     status = "vegetarian";
     const culprit = hits.find((h) => h.vegan === false && h.vegetarian === true);
