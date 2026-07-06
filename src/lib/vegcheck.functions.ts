@@ -27,7 +27,16 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return (data ?? []) as KnownIngredient[];
 }
 
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 // Self-learning: DB → AI classify → web-research any still-uncertain items.
+
 async function analyzeAndLearn(
   text: string,
   ctx: { brand?: string | null; productName?: string | null } = {},
@@ -80,12 +89,20 @@ async function analyzeAndLearn(
         const patched = result.hits.map((h) => {
           const v = findVerdict(h);
           if (!v) return h;
-          const sourceNote = v.sources.length > 0 ? ` (source: ${v.sources[0]})` : "";
+          const confirmedBy =
+            v.sources.length > 0
+              ? ` Confirmed by ${v.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2).join(", ")}.`
+              : "";
+          const prefix =
+            v.vegan === true || v.vegetarian === true
+              ? "Manufacturer doesn't specify, but independent sources confirm this is plant-based. "
+              : "";
           return {
             ...h,
             vegan: v.vegan,
             vegetarian: v.vegetarian,
-            explanation: `${v.explanation}${sourceNote}`,
+            explanation: `${prefix}${v.explanation}${confirmedBy}`.trim(),
+            sources: v.sources.slice(0, 3),
           };
         });
         result = deriveStatusFromHits(patched);
