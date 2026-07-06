@@ -27,7 +27,16 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return (data ?? []) as KnownIngredient[];
 }
 
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 // Self-learning: DB → AI classify → web-research any still-uncertain items.
+
 async function analyzeAndLearn(
   text: string,
   ctx: { brand?: string | null; productName?: string | null } = {},
