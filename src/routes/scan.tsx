@@ -2,9 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, Loader2, X, Upload, Aperture } from "lucide-react";
+import { Loader2, X, Upload, Aperture, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { lookupBarcode, ocrIngredients } from "@/lib/vegcheck.functions";
+import {
+  lookupBarcode,
+  ocrIngredients,
+  type ProductCandidate,
+} from "@/lib/vegcheck.functions";
 import { pushHistory } from "@/lib/local-store";
 
 export const Route = createFileRoute("/scan")({
@@ -30,6 +34,8 @@ function ScanPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
+  const [candidates, setCandidates] = useState<ProductCandidate[] | null>(null);
+  const [candidateQuery, setCandidateQuery] = useState<string>("");
 
   const lookup = useServerFn(lookupBarcode);
   const ocr = useServerFn(ocrIngredients);
@@ -109,6 +115,7 @@ function ScanPage() {
     stopCamera();
     setStatus("analyzing");
     setError(null);
+    setCandidates(null);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -119,18 +126,29 @@ function ScanPage() {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
-      const product = await ocr({
+      const result = await ocr({
         data: { imageBase64: base64, mime: file.type || "image/jpeg" },
       });
-      done(product);
+      if (result.kind === "product") {
+        done(result.product);
+      } else {
+        setStatus("idle");
+        setCandidateQuery(result.query);
+        setCandidates(result.candidates);
+      }
     } catch (e) {
       setStatus("error");
       setError(
         e instanceof Error
-          ? "No barcode or readable ingredient list was detected. Try a clearer photo with better lighting."
+          ? e.message
           : "Couldn't read the image",
       );
     }
+  };
+
+  const pickCandidate = async (c: ProductCandidate) => {
+    setCandidates(null);
+    await handleBarcode(c.barcode);
   };
 
   const capturePhoto = async () => {
@@ -253,6 +271,64 @@ function ScanPage() {
         <p className="mt-2 text-center text-xs text-muted-foreground">
           Take Photo captures whatever your camera sees now — the whole product or just its ingredients.
         </p>
+
+        {candidates && candidates.length > 0 ? (
+          <div className="mt-6 rounded-3xl border border-border bg-card p-4 shadow-card">
+            <div className="flex items-start gap-2">
+              <HelpCircle className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Which one is it?
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  We found a few products matching “{candidateQuery}”. Pick the right one, or retake the photo closer to the ingredients label for a definite answer.
+                </p>
+              </div>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {candidates.map((c) => (
+                <li key={c.barcode}>
+                  <button
+                    type="button"
+                    onClick={() => pickCandidate(c)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-2 text-left transition hover:border-primary/50"
+                  >
+                    {c.image_url ? (
+                      <img
+                        src={c.image_url}
+                        alt=""
+                        className="size-12 shrink-0 rounded-lg bg-muted object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="size-12 shrink-0 rounded-lg bg-muted" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {c.name}
+                      </div>
+                      {c.brand ? (
+                        <div className="truncate text-xs text-muted-foreground">
+                          {c.brand}
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => {
+                setCandidates(null);
+                retry();
+              }}
+              className="mt-3 w-full rounded-full border border-border py-2 text-xs font-medium text-muted-foreground"
+            >
+              None of these — retake photo
+            </button>
+          </div>
+        ) : null}
 
         <input
           ref={fileInputRef}

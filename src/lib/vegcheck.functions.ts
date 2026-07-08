@@ -286,7 +286,64 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
 // -------- Analyze a photo: works for either an ingredient label OR a product shot --------
 // The AI first tries to read the ingredient list. If none is visible (e.g. the
 // user photographed the front of the package), it identifies the product by
-// name/brand so we can look it up in Open Food Facts.
+// name/brand so we can look it up in Open Food Facts. When multiple plausible
+// matches exist we hand the choice back to the user rather than guess.
+
+export interface ProductCandidate {
+  barcode: string;
+  name: string;
+  brand: string | null;
+  image_url: string | null;
+}
+
+export type PhotoAnalysisResult =
+  | { kind: "product"; product: AnalyzedProduct }
+  | {
+      kind: "candidates";
+      query: string;
+      brand: string | null;
+      productName: string | null;
+      candidates: ProductCandidate[];
+    };
+
+function isValidBarcodeLength(code: string) {
+  return code.length === 8 || code.length === 12 || code.length === 13 || code.length === 14;
+}
+
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenSet(s: string) {
+  return new Set(normalize(s).split(" ").filter((t) => t.length > 1));
+}
+
+// Score how well an OFF product matches the user's photo (brand + name tokens).
+function scoreCandidate(
+  candidate: { name: string; brand: string | null },
+  wanted: { brand: string; productName: string },
+): number {
+  const wantedTokens = tokenSet(`${wanted.brand} ${wanted.productName}`);
+  if (wantedTokens.size === 0) return 0;
+  const haveTokens = tokenSet(`${candidate.brand ?? ""} ${candidate.name}`);
+  let overlap = 0;
+  for (const t of wantedTokens) if (haveTokens.has(t)) overlap += 1;
+  let score = overlap / wantedTokens.size;
+  if (wanted.brand) {
+    const brandTokens = tokenSet(wanted.brand);
+    let brandHits = 0;
+    for (const t of brandTokens) if (haveTokens.has(t)) brandHits += 1;
+    if (brandTokens.size > 0 && brandHits === brandTokens.size) score += 0.3;
+  }
+  return score;
+}
+
 export const ocrIngredients = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
@@ -296,7 +353,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }): Promise<AnalyzedProduct> => {
+  .handler(async ({ data }): Promise<PhotoAnalysisResult> => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -312,10 +369,10 @@ export const ocrIngredients = createServerFn({ method: "POST" })
             role: "system",
             content:
               'You analyze a photo of a food product. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
-              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string, or null if not clearly visible. ' +
-              '"product_name" = the product name printed on the packaging, or null. ' +
-              '"brand" = the brand/manufacturer name, or null. ' +
-              '"barcode" = the digits of the barcode if clearly visible, else null. ' +
+              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string, or null if not clearly visible. Do NOT guess or invent ingredients — only transcribe what you can actually read. ' +
+              '"product_name" = the exact product name printed on the packaging, or null if you cannot read one clearly. ' +
+              '"brand" = the brand/manufacturer name as printed, or null. ' +
+              '"barcode" = the digits of the barcode ONLY if you can read every digit clearly, else null. Never partially guess. ' +
               "No prose, no code fences, JSON only.",
           },
           {
@@ -358,79 +415,123 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     const brand = (parsed.brand ?? "").trim();
     const barcode = (parsed.barcode ?? "").replace(/\D/g, "");
 
-    // 1) Barcode visible? Use the reliable Open Food Facts lookup.
-    if (barcode && barcode.length >= 8) {
-      const viaBarcode = await lookupBarcode({ data: { barcode } });
-      if (viaBarcode) return viaBarcode;
-    }
-
-    // 2) Ingredient list visible? Analyze it directly.
-    if (ingredients && ingredients.length > 3) {
+    // 1) Ingredient list visible? Analyze it directly — the most reliable
+    // path because we're reading actual label text, not guessing an identity.
+    if (ingredients && ingredients.length > 10 && ingredients.includes(",")) {
       const supabase = serverSupabase();
       const analysis = await analyzeAndLearn(ingredients, {
         brand: brand || null,
         productName: productName || null,
       });
-      return upsertProduct(supabase, {
+      const product = await upsertProduct(supabase, {
         name: productName || "Scanned Label",
         brand: brand || null,
         ingredients_text: ingredients,
         analysis,
         source: "ocr",
       });
+      return { kind: "product", product };
     }
 
-    // 3) Only front-of-package info? Search Open Food Facts by name+brand.
+    // 2) Barcode visible? Only trust standard-length barcodes.
+    if (barcode && isValidBarcodeLength(barcode)) {
+      const viaBarcode = await lookupBarcode({ data: { barcode } });
+      if (viaBarcode) return { kind: "product", product: viaBarcode };
+    }
+
+    // 3) Only front-of-package info? Search OFF and either auto-pick when
+    // there's a confident match, or hand candidates back for the user.
     const searchTerm = [brand, productName].filter(Boolean).join(" ").trim();
     if (searchTerm) {
       const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
       const encoded = encodeURIComponent(searchTerm);
-      const candidates: string[] = [];
+      const fields = "code,product_name,brands,image_front_small_url,image_small_url";
+      type OffProduct = {
+        code?: string;
+        product_name?: string;
+        brands?: string | string[];
+        image_front_small_url?: string;
+        image_small_url?: string;
+      };
+      const collected: OffProduct[] = [];
       const salRes = await fetch(
-        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=5&fields=code`,
+        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
         { headers },
       ).catch(() => null);
       if (salRes && salRes.ok) {
         try {
-          const j = (await salRes.json()) as { hits?: { code?: string }[] };
-          for (const h of j.hits ?? []) {
-            if (h.code) candidates.push(h.code.replace(/^0+/, "") || h.code);
-          }
+          const j = (await salRes.json()) as { hits?: OffProduct[] };
+          if (j.hits) collected.push(...j.hits);
         } catch {
           // ignore
         }
       }
-      if (candidates.length === 0) {
+      if (collected.length === 0) {
         const v2Res = await fetch(
-          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=5&fields=code`,
+          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
           { headers },
         ).catch(() => null);
         if (v2Res && v2Res.ok) {
           try {
-            const j = (await v2Res.json()) as { products?: { code?: string }[] };
-            for (const p of j.products ?? []) {
-              if (p.code) candidates.push(p.code.replace(/^0+/, "") || p.code);
-            }
+            const j = (await v2Res.json()) as { products?: OffProduct[] };
+            if (j.products) collected.push(...j.products);
           } catch {
             // ignore
           }
         }
       }
-      for (const code of candidates) {
-        try {
-          const product = await lookupBarcode({ data: { barcode: code } });
-          if (product) return product;
-        } catch {
-          // try next candidate
-        }
+
+      const seen = new Set<string>();
+      const candidates: ProductCandidate[] = [];
+      for (const p of collected) {
+        if (!p.code || !p.product_name) continue;
+        const code = p.code.replace(/^0+/, "") || p.code;
+        if (seen.has(code)) continue;
+        seen.add(code);
+        const b = Array.isArray(p.brands)
+          ? p.brands.filter(Boolean).join(", ") || null
+          : (p.brands ?? null);
+        candidates.push({
+          barcode: code,
+          name: p.product_name,
+          brand: b,
+          image_url: p.image_front_small_url ?? p.image_small_url ?? null,
+        });
+        if (candidates.length >= 8) break;
       }
+
+      if (candidates.length > 0) {
+        const scored = candidates
+          .map((c) => ({ c, score: scoreCandidate(c, { brand, productName }) }))
+          .sort((a, b) => b.score - a.score);
+        const top = scored[0];
+        const second = scored[1];
+        const confident =
+          top.score >= 0.75 && (!second || top.score - second.score >= 0.25);
+        if (confident) {
+          try {
+            const product = await lookupBarcode({ data: { barcode: top.c.barcode } });
+            if (product) return { kind: "product", product };
+          } catch {
+            // fall through to candidate list
+          }
+        }
+        return {
+          kind: "candidates",
+          query: searchTerm,
+          brand: brand || null,
+          productName: productName || null,
+          candidates: scored.map((s) => s.c),
+        };
+      }
+
       throw new Error(
-        `We recognized "${searchTerm}" but couldn't find its ingredient list. Try a photo of the ingredient label.`,
+        `We couldn't find "${searchTerm}" in the food database. Try a photo of the ingredient label instead.`,
       );
     }
 
     throw new Error(
-      "We couldn't recognize the product or read an ingredient list. Try a clearer, well-lit photo.",
+      "We couldn't recognize the product or read an ingredient list. Try a clearer, well-lit photo — get closer to the packaging.",
     );
   });
 
