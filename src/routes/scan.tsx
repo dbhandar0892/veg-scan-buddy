@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, Loader2, X, Upload, Aperture, HelpCircle } from "lucide-react";
+import { Loader2, X, Upload, Aperture, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
   lookupBarcode,
