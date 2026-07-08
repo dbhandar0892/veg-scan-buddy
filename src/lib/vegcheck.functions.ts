@@ -417,7 +417,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
 
     // 1) Ingredient list visible? Analyze it directly — the most reliable
     // path because we're reading actual label text, not guessing an identity.
-    if (ingredients && ingredients.length > 10 && ingredients.includes(",")) {
+    if (ingredients && ingredients.length > 8) {
       const supabase = serverSupabase();
       const analysis = await analyzeAndLearn(ingredients, {
         brand: brand || null,
