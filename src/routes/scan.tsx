@@ -34,6 +34,8 @@ function ScanPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
+  const [candidates, setCandidates] = useState<ProductCandidate[] | null>(null);
+  const [candidateQuery, setCandidateQuery] = useState<string>("");
 
   const lookup = useServerFn(lookupBarcode);
   const ocr = useServerFn(ocrIngredients);
