@@ -444,7 +444,6 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     const searchTerm = [brand, productName].filter(Boolean).join(" ").trim();
     if (searchTerm) {
       const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
-      const encoded = encodeURIComponent(searchTerm);
       const fields = "code,product_name,brands,image_front_small_url,image_small_url";
       type OffProduct = {
         code?: string;
@@ -454,29 +453,38 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         image_small_url?: string;
       };
       const collected: OffProduct[] = [];
-      const salRes = await fetch(
-        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
-        { headers },
-      ).catch(() => null);
-      if (salRes && salRes.ok) {
-        try {
-          const j = (await salRes.json()) as { hits?: OffProduct[] };
-          if (j.hits) collected.push(...j.hits);
-        } catch {
-          // ignore
-        }
+      const queries = [searchTerm];
+      if (brand && productName && brand !== productName) {
+        queries.push(productName);
+        queries.push(brand);
       }
-      if (collected.length === 0) {
-        const v2Res = await fetch(
-          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
+      for (const q of queries) {
+        if (collected.length >= 10) break;
+        const encoded = encodeURIComponent(q);
+        const salRes = await fetch(
+          `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
           { headers },
         ).catch(() => null);
-        if (v2Res && v2Res.ok) {
+        if (salRes && salRes.ok) {
           try {
-            const j = (await v2Res.json()) as { products?: OffProduct[] };
-            if (j.products) collected.push(...j.products);
+            const j = (await salRes.json()) as { hits?: OffProduct[] };
+            if (j.hits) collected.push(...j.hits);
           } catch {
             // ignore
+          }
+        }
+        if (collected.length === 0) {
+          const v2Res = await fetch(
+            `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
+            { headers },
+          ).catch(() => null);
+          if (v2Res && v2Res.ok) {
+            try {
+              const j = (await v2Res.json()) as { products?: OffProduct[] };
+              if (j.products) collected.push(...j.products);
+            } catch {
+              // ignore
+            }
           }
         }
       }
