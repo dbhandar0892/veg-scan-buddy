@@ -272,6 +272,64 @@ function ScanPage() {
           Take Photo captures whatever your camera sees now — the whole product or just its ingredients.
         </p>
 
+        {candidates && candidates.length > 0 ? (
+          <div className="mt-6 rounded-3xl border border-border bg-card p-4 shadow-card">
+            <div className="flex items-start gap-2">
+              <HelpCircle className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Which one is it?
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  We found a few products matching “{candidateQuery}”. Pick the right one, or retake the photo closer to the ingredients label for a definite answer.
+                </p>
+              </div>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {candidates.map((c) => (
+                <li key={c.barcode}>
+                  <button
+                    type="button"
+                    onClick={() => pickCandidate(c)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-2 text-left transition hover:border-primary/50"
+                  >
+                    {c.image_url ? (
+                      <img
+                        src={c.image_url}
+                        alt=""
+                        className="size-12 shrink-0 rounded-lg bg-muted object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="size-12 shrink-0 rounded-lg bg-muted" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {c.name}
+                      </div>
+                      {c.brand ? (
+                        <div className="truncate text-xs text-muted-foreground">
+                          {c.brand}
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => {
+                setCandidates(null);
+                retry();
+              }}
+              className="mt-3 w-full rounded-full border border-border py-2 text-xs font-medium text-muted-foreground"
+            >
+              None of these — retake photo
+            </button>
+          </div>
+        ) : null}
+
         <input
           ref={fileInputRef}
           type="file"
