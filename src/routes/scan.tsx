@@ -115,6 +115,7 @@ function ScanPage() {
     stopCamera();
     setStatus("analyzing");
     setError(null);
+    setCandidates(null);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -125,18 +126,29 @@ function ScanPage() {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
-      const product = await ocr({
+      const result = await ocr({
         data: { imageBase64: base64, mime: file.type || "image/jpeg" },
       });
-      done(product);
+      if (result.kind === "product") {
+        done(result.product);
+      } else {
+        setStatus("idle");
+        setCandidateQuery(result.query);
+        setCandidates(result.candidates);
+      }
     } catch (e) {
       setStatus("error");
       setError(
         e instanceof Error
-          ? "No barcode or readable ingredient list was detected. Try a clearer photo with better lighting."
+          ? e.message
           : "Couldn't read the image",
       );
     }
+  };
+
+  const pickCandidate = async (c: ProductCandidate) => {
+    setCandidates(null);
+    await handleBarcode(c.barcode);
   };
 
   const capturePhoto = async () => {
