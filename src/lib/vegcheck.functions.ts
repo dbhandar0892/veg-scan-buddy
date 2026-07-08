@@ -368,12 +368,12 @@ export const ocrIngredients = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              'You analyze a photo of a food product. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
-              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string, or null if not clearly visible. Do NOT guess or invent ingredients — only transcribe what you can actually read. ' +
-              '"product_name" = the exact product name printed on the packaging, or null if you cannot read one clearly. ' +
+              'You are an OCR assistant for a food product photo. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
+              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string. Read ALL visible ingredient text even if partial. Return null ONLY if no ingredient list is visible at all. Do not invent ingredients. ' +
+              '"product_name" = the exact product name printed on the packaging, or null if unreadable. ' +
               '"brand" = the brand/manufacturer name as printed, or null. ' +
-              '"barcode" = the digits of the barcode ONLY if you can read every digit clearly, else null. Never partially guess. ' +
-              "No prose, no code fences, JSON only.",
+              '"barcode" = ONLY the digits if you can read every digit clearly, else null. Never partially guess a barcode. ' +
+              "Output JSON only. No prose, no code fences.",
           },
           {
             role: "user",
