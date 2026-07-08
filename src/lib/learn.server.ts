@@ -45,7 +45,7 @@ Return ONLY JSON matching: {"ingredients":[{"input":string,"name":string,"vegan"
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "google/gemini-2.5-flash",
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -195,7 +195,7 @@ Search the web now and return the JSON.`;
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         response_format: { type: "json_object" },
         // OpenRouter web-search plugin — enables live grounding with URL citations.
         // (The Gemini-native `tools: [{ type: "google_search" }]` field is

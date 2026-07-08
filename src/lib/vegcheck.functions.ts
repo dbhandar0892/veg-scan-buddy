@@ -363,17 +363,17 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         "Lovable-API-Key": key,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
             content:
-              'You analyze a photo of a food product. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
-              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string, or null if not clearly visible. Do NOT guess or invent ingredients — only transcribe what you can actually read. ' +
-              '"product_name" = the exact product name printed on the packaging, or null if you cannot read one clearly. ' +
+              'You are an OCR assistant for a food product photo. Return ONLY a compact JSON object with these keys: {"ingredients": string|null, "product_name": string|null, "brand": string|null, "barcode": string|null}. ' +
+              '"ingredients" = the ingredient list read verbatim from the label as a comma-separated string. Read ALL visible ingredient text even if partial. Return null ONLY if no ingredient list is visible at all. Do not invent ingredients. ' +
+              '"product_name" = the exact product name printed on the packaging, or null if unreadable. ' +
               '"brand" = the brand/manufacturer name as printed, or null. ' +
-              '"barcode" = the digits of the barcode ONLY if you can read every digit clearly, else null. Never partially guess. ' +
-              "No prose, no code fences, JSON only.",
+              '"barcode" = ONLY the digits if you can read every digit clearly, else null. Never partially guess a barcode. ' +
+              "Output JSON only. No prose, no code fences.",
           },
           {
             role: "user",
@@ -417,7 +417,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
 
     // 1) Ingredient list visible? Analyze it directly — the most reliable
     // path because we're reading actual label text, not guessing an identity.
-    if (ingredients && ingredients.length > 10 && ingredients.includes(",")) {
+    if (ingredients && ingredients.length > 8) {
       const supabase = serverSupabase();
       const analysis = await analyzeAndLearn(ingredients, {
         brand: brand || null,
@@ -444,7 +444,6 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     const searchTerm = [brand, productName].filter(Boolean).join(" ").trim();
     if (searchTerm) {
       const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
-      const encoded = encodeURIComponent(searchTerm);
       const fields = "code,product_name,brands,image_front_small_url,image_small_url";
       type OffProduct = {
         code?: string;
@@ -454,29 +453,38 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         image_small_url?: string;
       };
       const collected: OffProduct[] = [];
-      const salRes = await fetch(
-        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
-        { headers },
-      ).catch(() => null);
-      if (salRes && salRes.ok) {
-        try {
-          const j = (await salRes.json()) as { hits?: OffProduct[] };
-          if (j.hits) collected.push(...j.hits);
-        } catch {
-          // ignore
-        }
+      const queries = [searchTerm];
+      if (brand && productName && brand !== productName) {
+        queries.push(productName);
+        queries.push(brand);
       }
-      if (collected.length === 0) {
-        const v2Res = await fetch(
-          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
+      for (const q of queries) {
+        if (collected.length >= 10) break;
+        const encoded = encodeURIComponent(q);
+        const salRes = await fetch(
+          `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
           { headers },
         ).catch(() => null);
-        if (v2Res && v2Res.ok) {
+        if (salRes && salRes.ok) {
           try {
-            const j = (await v2Res.json()) as { products?: OffProduct[] };
-            if (j.products) collected.push(...j.products);
+            const j = (await salRes.json()) as { hits?: OffProduct[] };
+            if (j.hits) collected.push(...j.hits);
           } catch {
             // ignore
+          }
+        }
+        if (collected.length === 0) {
+          const v2Res = await fetch(
+            `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
+            { headers },
+          ).catch(() => null);
+          if (v2Res && v2Res.ok) {
+            try {
+              const j = (await v2Res.json()) as { products?: OffProduct[] };
+              if (j.products) collected.push(...j.products);
+            } catch {
+              // ignore
+            }
           }
         }
       }
@@ -507,7 +515,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         const top = scored[0];
         const second = scored[1];
         const confident =
-          top.score >= 0.75 && (!second || top.score - second.score >= 0.25);
+          top.score >= 0.6 && (!second || top.score - second.score >= 0.15);
         if (confident) {
           try {
             const product = await lookupBarcode({ data: { barcode: top.c.barcode } });
