@@ -515,7 +515,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         const top = scored[0];
         const second = scored[1];
         const confident =
-          top.score >= 0.75 && (!second || top.score - second.score >= 0.25);
+          top.score >= 0.6 && (!second || top.score - second.score >= 0.15);
         if (confident) {
           try {
             const product = await lookupBarcode({ data: { barcode: top.c.barcode } });
