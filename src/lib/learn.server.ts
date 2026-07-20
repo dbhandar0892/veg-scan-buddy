@@ -228,3 +228,60 @@ Search the web now and return the JSON.`;
   }
   return (parsed.verdicts ?? []).filter((v) => v && v.token);
 }
+
+/**
+ * Given a product identified from a front-of-package photo, use Gemini with
+ * web search to find its ingredient list from the manufacturer or retailer.
+ * Returns null if nothing credible was found.
+ */
+export async function findIngredientsOnWeb(ctx: {
+  brand?: string | null;
+  productName?: string | null;
+}): Promise<{ ingredients: string; sources: string[] } | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  const query = [ctx.brand, ctx.productName].filter(Boolean).join(" ").trim();
+  if (!query) return null;
+
+  const system = `You are a food-label researcher with web search. Find the full ingredient list for the specified product from the most authoritative source you can — the manufacturer's official website first, then major retailers (Amazon, Target, Walmart, Tesco, etc.), then Open Food Facts. Return ONLY JSON: {"ingredients": string|null, "sources": string[]}. "ingredients" = the ingredient list copied verbatim as a comma-separated string (no marketing prose, no nutrition facts). Return null if you cannot find a credible ingredient list. "sources" = up to 3 URLs you used.`;
+
+  const user = `Product: ${query}\nFind and return its ingredient list now.`;
+
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        plugins: [{ id: "web", max_results: 5 }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error("[find-ingredients] network error:", err);
+    return null;
+  }
+  if (!res.ok) {
+    console.error("[find-ingredients] AI failed", res.status);
+    return null;
+  }
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: { ingredients?: string | null; sources?: string[] } = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  const ingredients = (parsed.ingredients ?? "").trim();
+  if (!ingredients || ingredients.length < 10) return null;
+  return { ingredients, sources: (parsed.sources ?? []).slice(0, 3) };
+}
