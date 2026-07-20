@@ -36,6 +36,7 @@ function ScanPage() {
   const [manual, setManual] = useState("");
   const [candidates, setCandidates] = useState<ProductCandidate[] | null>(null);
   const [candidateQuery, setCandidateQuery] = useState<string>("");
+  const [analysisMessage, setAnalysisMessage] = useState("Analyzing photo…");
 
   const lookup = useServerFn(lookupBarcode);
   const ocr = useServerFn(ocrIngredients);
@@ -116,7 +117,17 @@ function ScanPage() {
     setStatus("analyzing");
     setError(null);
     setCandidates(null);
+    setAnalysisMessage("Checking photo for a barcode…");
     try {
+      const barcode = await decodeBarcodeFromImage(file);
+      if (barcode) {
+        setAnalysisMessage("Barcode found — looking it up…");
+        await handleBarcode(barcode);
+        return;
+      }
+
+      setAnalysisMessage("Reading product details…");
+      const optimized = await optimizePhoto(file);
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -124,15 +135,16 @@ function ScanPage() {
           resolve(s.slice(s.indexOf(",") + 1));
         };
         reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(optimized.blob);
       });
       const result = await ocr({
-        data: { imageBase64: base64, mime: file.type || "image/jpeg" },
+        data: { imageBase64: base64, mime: optimized.mime },
       });
       if (result.kind === "product") {
         done(result.product);
       } else {
         setStatus("idle");
+        setAnalysisMessage("Analyzing photo…");
         setCandidateQuery(result.query);
         setCandidates(result.candidates);
       }
@@ -149,6 +161,44 @@ function ScanPage() {
   const pickCandidate = async (c: ProductCandidate) => {
     setCandidates(null);
     await handleBarcode(c.barcode);
+  };
+
+  const decodeBarcodeFromImage = async (file: File): Promise<string | null> => {
+    const url = URL.createObjectURL(file);
+    try {
+      const reader = new BrowserMultiFormatReader();
+      const result = await reader.decodeFromImageUrl(url);
+      const code = result.getText().replace(/\D/g, "");
+      return code.length >= 4 ? code : null;
+    } catch {
+      return null;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const optimizePhoto = async (
+    file: File,
+  ): Promise<{ blob: Blob; mime: string }> => {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1280;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return { blob: file, mime: file.type || "image/jpeg" };
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.82),
+    );
+    return { blob: blob ?? file, mime: blob ? "image/jpeg" : file.type || "image/jpeg" };
   };
 
   const capturePhoto = async () => {
@@ -229,7 +279,7 @@ function ScanPage() {
             <div className="absolute inset-0 grid place-items-center bg-background/85">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <Loader2 className="size-4 animate-spin" />
-                {status === "looking-up" ? "Looking it up…" : "Analyzing photo…"}
+                {status === "looking-up" ? "Looking it up…" : analysisMessage}
               </div>
             </div>
           ) : null}
