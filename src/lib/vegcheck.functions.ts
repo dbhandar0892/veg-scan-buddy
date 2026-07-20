@@ -324,6 +324,22 @@ function tokenSet(s: string) {
   return new Set(normalize(s).split(" ").filter((t) => t.length > 1));
 }
 
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = 7000,
+): Promise<Response | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // Score how well an OFF product matches the user's photo (brand + name tokens).
 function scoreCandidate(
   candidate: { name: string; brand: string | null },
@@ -356,7 +372,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<PhotoAnalysisResult> => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -387,7 +403,8 @@ export const ocrIngredients = createServerFn({ method: "POST" })
           },
         ],
       }),
-    });
+    }, 18000);
+    if (!res) throw new Error("Photo analysis took too long. Try a clearer photo or enter the barcode.");
     if (res.status === 429) throw new Error("Rate limited. Please try again in a moment.");
     if (res.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
     if (!res.ok) throw new Error(`Photo analysis failed (${res.status})`);
@@ -453,41 +470,42 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         image_small_url?: string;
       };
       const collected: OffProduct[] = [];
-      const queries = [searchTerm];
+      const queries = Array.from(new Set([searchTerm]));
       if (brand && productName && brand !== productName) {
         queries.push(productName);
         queries.push(brand);
       }
-      for (const q of queries) {
-        if (collected.length >= 10) break;
+      const searches = queries.flatMap((q) => {
         const encoded = encodeURIComponent(q);
-        const salRes = await fetch(
-          `https://search.openfoodfacts.org/search?q=${encoded}&page_size=10&fields=${fields}`,
-          { headers },
-        ).catch(() => null);
-        if (salRes && salRes.ok) {
-          try {
-            const j = (await salRes.json()) as { hits?: OffProduct[] };
-            if (j.hits) collected.push(...j.hits);
-          } catch {
-            // ignore
-          }
-        }
-        if (collected.length === 0) {
-          const v2Res = await fetch(
-            `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=10&fields=${fields}`,
+        return [
+          fetchWithTimeout(
+            `https://search.openfoodfacts.org/search?q=${encoded}&page_size=8&fields=${fields}`,
             { headers },
-          ).catch(() => null);
-          if (v2Res && v2Res.ok) {
+          ).then(async (searchRes) => {
+            if (!searchRes?.ok) return [] as OffProduct[];
             try {
-              const j = (await v2Res.json()) as { products?: OffProduct[] };
-              if (j.products) collected.push(...j.products);
+              const j = (await searchRes.json()) as { hits?: OffProduct[] };
+              return j.hits ?? [];
             } catch {
-              // ignore
+              return [] as OffProduct[];
             }
-          }
-        }
-      }
+          }),
+          fetchWithTimeout(
+            `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=8&fields=${fields}`,
+            { headers },
+          ).then(async (searchRes) => {
+            if (!searchRes?.ok) return [] as OffProduct[];
+            try {
+              const j = (await searchRes.json()) as { products?: OffProduct[] };
+              return j.products ?? [];
+            } catch {
+              return [] as OffProduct[];
+            }
+          }),
+        ];
+      });
+      const searchResults = await Promise.all(searches);
+      for (const group of searchResults) collected.push(...group);
 
       const seen = new Set<string>();
       const candidates: ProductCandidate[] = [];
