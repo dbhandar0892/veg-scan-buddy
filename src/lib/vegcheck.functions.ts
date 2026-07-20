@@ -551,8 +551,32 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         };
       }
 
+      // No OFF candidates — fall through to the web-search fallback below.
+    }
+
+    // 4) Last resort: use web search to find the ingredient list from the
+    // manufacturer or a major retailer. This lets front-of-package photos
+    // succeed even when the product isn't in Open Food Facts.
+    if (productName || brand) {
+      const { findIngredientsOnWeb } = await import("./learn.server");
+      const found = await findIngredientsOnWeb({ brand, productName });
+      if (found) {
+        const supabase = serverSupabase();
+        const analysis = await analyzeAndLearn(found.ingredients, {
+          brand: brand || null,
+          productName: productName || null,
+        });
+        const product = await upsertProduct(supabase, {
+          name: productName || brand || "Scanned Product",
+          brand: brand || null,
+          ingredients_text: found.ingredients,
+          analysis,
+          source: "web",
+        });
+        return { kind: "product", product };
+      }
       throw new Error(
-        `We couldn't find "${searchTerm}" in the food database. Try a photo of the ingredient label instead.`,
+        `We identified "${[brand, productName].filter(Boolean).join(" ")}" but couldn't find its ingredient list online. Try a photo of the ingredient label.`,
       );
     }
 
