@@ -200,25 +200,6 @@ function ScanPage() {
     return { blob: blob ?? file, mime: blob ? "image/jpeg" : file.type || "image/jpeg" };
   };
 
-  const capturePhoto = async () => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) {
-      fileInputRef.current?.click();
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const blob = await new Promise<Blob | null>((r) =>
-      canvas.toBlob((b) => r(b), "image/jpeg", 0.9),
-    );
-    if (!blob) return;
-    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-    await handleImage(file);
-  };
 
   useEffect(() => {
     start();
