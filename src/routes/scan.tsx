@@ -86,7 +86,7 @@ function ScanPage() {
       setStatus("error");
       setError(
         e instanceof Error
-          ? "Couldn't access your camera. You can still upload a photo."
+          ? "Couldn't access your camera. You can still enter a barcode manually."
           : "Camera unavailable",
       );
     }
