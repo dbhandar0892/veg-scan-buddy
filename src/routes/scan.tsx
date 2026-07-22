@@ -298,13 +298,22 @@ function ScanPage() {
           </div>
 
           <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={busy}
+            onClick={captureIngredientsFromVideo}
+            disabled={busy || status !== "scanning"}
             className="flex h-16 w-full items-center justify-center gap-3 rounded-3xl border-2 border-border bg-card text-lg font-semibold text-foreground active:scale-[0.98] transition disabled:opacity-50"
           >
             <span className="text-2xl">📄</span>
             Scan Ingredient List
           </button>
+
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={busy}
+            className="mx-auto block text-xs font-medium text-muted-foreground underline underline-offset-4"
+          >
+            or upload a photo instead
+          </button>
+
         </div>
 
         {candidates && candidates.length > 0 ? (
