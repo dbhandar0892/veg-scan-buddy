@@ -27,7 +27,6 @@ function ScanPage() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("idle");
@@ -87,7 +86,7 @@ function ScanPage() {
       setStatus("error");
       setError(
         e instanceof Error
-          ? "Couldn't access your camera. You can still upload a photo."
+          ? "Couldn't access your camera. You can still enter a barcode manually."
           : "Camera unavailable",
       );
     }
@@ -100,7 +99,7 @@ function ScanPage() {
       if (!product) {
         setStatus("error");
         setError(
-          `No product found for ${code}. Take a photo of the product or its ingredients instead.`,
+          `No product found for ${code}. Try scanning the ingredient list instead.`,
         );
         return;
       }
@@ -333,15 +332,6 @@ function ScanPage() {
             <span className="text-2xl">📄</span>
             Scan Ingredient List
           </button>
-
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={busy}
-            className="mx-auto block text-xs font-medium text-muted-foreground underline underline-offset-4"
-          >
-            or upload a photo instead
-          </button>
-
         </div>
 
         {candidates && candidates.length > 0 ? (
@@ -401,19 +391,6 @@ function ScanPage() {
             </button>
           </div>
         ) : null}
-
-        <input
-          ref={uploadInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleImage(f);
-            e.target.value = "";
-          }}
-        />
 
         <div className="mt-6">
           <form
