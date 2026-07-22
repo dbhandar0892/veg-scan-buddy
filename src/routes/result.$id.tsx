@@ -118,7 +118,9 @@ function ResultPage() {
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-vegan-soft">
               <Check className="size-3.5 stroke-[3]" aria-hidden />
             </span>
-            The company confirms this product is vegetarian friendly.
+            {product.status === "vegan"
+              ? "The company confirms this product is vegetarian and vegan friendly."
+              : "The company confirms this product is vegetarian friendly."}
           </p>
         ) : product.verification === "community" ? (
           <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
