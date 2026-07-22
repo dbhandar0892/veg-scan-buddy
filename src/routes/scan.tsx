@@ -99,7 +99,7 @@ function ScanPage() {
       if (!product) {
         setStatus("error");
         setError(
-          `No product found for ${code}. Take a photo of the product or its ingredients instead.`,
+          `No product found for ${code}. Try scanning the ingredient list instead.`,
         );
         return;
       }
@@ -332,15 +332,6 @@ function ScanPage() {
             <span className="text-2xl">📄</span>
             Scan Ingredient List
           </button>
-
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={busy}
-            className="mx-auto block text-xs font-medium text-muted-foreground underline underline-offset-4"
-          >
-            or upload a photo instead
-          </button>
-
         </div>
 
         {candidates && candidates.length > 0 ? (
@@ -400,19 +391,6 @@ function ScanPage() {
             </button>
           </div>
         ) : null}
-
-        <input
-          ref={uploadInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleImage(f);
-            e.target.value = "";
-          }}
-        />
 
         <div className="mt-6">
           <form
