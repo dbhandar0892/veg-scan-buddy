@@ -354,18 +354,6 @@ function ScanPage() {
         ) : null}
 
         <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleImage(f);
-            e.target.value = "";
-          }}
-        />
-        <input
           ref={uploadInputRef}
           type="file"
           accept="image/*"
