@@ -200,6 +200,34 @@ function ScanPage() {
     return { blob: blob ?? file, mime: blob ? "image/jpeg" : file.type || "image/jpeg" };
   };
 
+  const captureIngredientsFromVideo = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setError("Camera isn't ready yet. Give it a moment and try again.");
+      setStatus("error");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9),
+    );
+    if (!blob) {
+      setError("Couldn't capture the frame. Try again.");
+      setStatus("error");
+      return;
+    }
+    stopCamera();
+    const file = new File([blob], "ingredients.jpg", { type: "image/jpeg" });
+    await handleImage(file);
+  };
+
+
+
 
   useEffect(() => {
     start();
