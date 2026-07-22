@@ -27,7 +27,6 @@ function ScanPage() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("idle");
