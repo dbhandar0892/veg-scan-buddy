@@ -224,7 +224,7 @@ function ScanPage() {
           Point your camera at the barcode — we'll detect it automatically.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          No barcode? Tap <span className="font-medium text-foreground">Upload Photo</span> to send a picture of the product or its ingredients.
+          No barcode? Tap <span className="font-medium text-foreground">Scan Ingredients</span> to point your camera at the ingredients list.
         </p>
       </div>
 
