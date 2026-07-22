@@ -155,10 +155,20 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     }
   } else if (hasDairyEggHoney) {
     status = "vegetarian";
-    const culprit = hits.find((h) => h.vegan === false && h.vegetarian === true);
-    explanation = culprit
-      ? `Contains ${culprit.name.toLowerCase()} but no meat or animal rennet.`
-      : "Contains dairy, egg, or honey but no other animal ingredients.";
+    const culprits = hits.filter((h) => h.vegan === false && h.vegetarian === true);
+    const kinds = new Set<string>();
+    for (const c of culprits) {
+      const n = c.name.toLowerCase();
+      const slug = (c.slug ?? "").toLowerCase();
+      if (slug.includes("honey") || n.includes("honey")) kinds.add("honey");
+      else if (slug.includes("egg") || n.includes("egg") || n.includes("albumen")) kinds.add("egg");
+      else kinds.add("dairy");
+    }
+    const label =
+      kinds.size === 0
+        ? "dairy, egg, or honey"
+        : Array.from(kinds).join(kinds.size === 2 ? " and " : ", ");
+    explanation = `Contains ${label} but no meat or animal rennet.`;
   } else if (matched > 0) {
     status = "vegan";
     explanation = "No animal-derived ingredients were detected.";
