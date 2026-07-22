@@ -99,7 +99,7 @@ function ScanPage() {
       if (!product) {
         setStatus("error");
         setError(
-          `No product found for ${code}. Try scanning the ingredient list instead.`,
+          `No product found for ${code}. Tap Scan Ingredient List to check the ingredients instead.`,
         );
         return;
       }

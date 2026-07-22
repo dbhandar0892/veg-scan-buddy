@@ -609,12 +609,12 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         return { kind: "product", product };
       }
       throw new Error(
-        `We identified "${[brand, productName].filter(Boolean).join(" ")}" but couldn't find its ingredient list online. Try a photo of the ingredient label.`,
+        `We identified "${[brand, productName].filter(Boolean).join(" ")}" but couldn't find its ingredient list online. Try scanning the ingredient list instead.`,
       );
     }
 
     throw new Error(
-      "We couldn't recognize the product or read an ingredient list. Try a clearer, well-lit photo — get closer to the packaging.",
+      "We couldn't recognize the product or read an ingredient list. Try scanning the ingredient list again with better lighting, or enter the barcode manually.",
     );
   });
 
