@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Loader2, X, Upload, HelpCircle } from "lucide-react";
+import { Loader2, X, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
   lookupBarcode,
@@ -218,14 +218,8 @@ function ScanPage() {
     <AppShell>
       <div className="px-5 pt-8">
         <h1 className="font-display text-3xl tracking-tight text-foreground">
-          Scan Product
+          Scan
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Point your camera at the barcode — we'll detect it automatically.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          No barcode? Tap <span className="font-medium text-foreground">Scan Ingredients</span> to point your camera at the ingredients list.
-        </p>
       </div>
 
       <div className="mt-6 px-5">
@@ -242,7 +236,7 @@ function ScanPage() {
             <>
               <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
               <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
-                Center the barcode in the frame — we'll detect it automatically
+                Center the barcode in the frame
               </div>
             </>
           ) : null}
@@ -282,18 +276,36 @@ function ScanPage() {
           ) : null}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={() => {
+              setError(null);
+              if (status !== "scanning") start();
+            }}
+            disabled={busy}
+            className="flex h-16 w-full items-center justify-center gap-3 rounded-3xl bg-primary text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/20 active:scale-[0.98] transition disabled:opacity-50"
+          >
+            <span className="text-2xl">📷</span>
+            Scan Barcode
+          </button>
+
+          <div className="flex items-center justify-center gap-3 py-1">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              OR
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
           <button
             onClick={() => uploadInputRef.current?.click()}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
+            className="flex h-16 w-full items-center justify-center gap-3 rounded-3xl border-2 border-border bg-card text-lg font-semibold text-foreground active:scale-[0.98] transition disabled:opacity-50"
           >
-            <Upload className="size-4" /> Scan Ingredients
+            <span className="text-2xl">📄</span>
+            Scan Ingredient List
           </button>
         </div>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Opens your camera so you can capture the ingredients list on the back of the pack.
-        </p>
 
         {candidates && candidates.length > 0 ? (
           <div className="mt-6 rounded-3xl border border-border bg-card p-4 shadow-card">
@@ -367,11 +379,8 @@ function ScanPage() {
         />
 
         <div className="mt-6">
-          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Or enter the barcode
-          </label>
           <form
-            className="mt-2 flex gap-2"
+            className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (manual.trim()) {
@@ -384,12 +393,12 @@ function ScanPage() {
               inputMode="numeric"
               value={manual}
               onChange={(e) => setManual(e.target.value.replace(/\D/g, ""))}
-              placeholder="e.g. 3017620422003"
+              placeholder="Enter barcode"
               className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             <button
               type="submit"
-              className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+              className="rounded-2xl bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground"
             >
               Check
             </button>
