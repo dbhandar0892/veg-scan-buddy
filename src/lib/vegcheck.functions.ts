@@ -106,8 +106,41 @@ async function analyzeAndLearn(
           };
         });
         const manufacturerConfirmed = verdicts.some((v) => v.manufacturer_confirms);
+        const derived = deriveStatusFromHits(patched);
+        let finalStatus = derived.status;
+        let finalExplanation = derived.explanation;
+        let finalConfidence = derived.confidence;
+
+        if (manufacturerConfirmed) {
+          // Manufacturer explicitly confirms vegetarian-friendly. Trust that
+          // over any lingering "unknown" from an ingredient we couldn't pin
+          // down individually, and phrase the message coherently.
+          const meatLike = patched.find((h) => h.vegetarian === false);
+          const nonVegan = patched.find((h) => h.vegan === false && h.vegetarian !== false);
+          if (meatLike) {
+            // Manufacturer says veg but an ingredient reads as meat — keep the
+            // stricter verdict; don't silently override.
+            finalStatus = "not_vegetarian";
+            finalExplanation = `Contains ${meatLike.name.toLowerCase()}.`;
+          } else if (nonVegan) {
+            finalStatus = "vegetarian";
+            finalExplanation = `The company confirms this product is vegetarian friendly, but it isn't vegan because it contains ${nonVegan.name.toLowerCase()}.`;
+            finalConfidence = Math.max(finalConfidence, 0.9);
+          } else {
+            const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);
+            finalStatus = allVegan ? "vegan" : "vegetarian";
+            finalExplanation = finalStatus === "vegan"
+              ? "The company confirms this product is vegan friendly."
+              : "The company confirms this product is vegetarian friendly.";
+            finalConfidence = Math.max(finalConfidence, 0.9);
+          }
+        }
+
         result = {
-          ...deriveStatusFromHits(patched),
+          ...derived,
+          status: finalStatus,
+          explanation: finalExplanation,
+          confidence: finalConfidence,
           verification: manufacturerConfirmed ? "manufacturer" : "community",
         };
       }
