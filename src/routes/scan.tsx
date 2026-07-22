@@ -288,11 +288,11 @@ function ScanPage() {
             disabled={busy}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
-            <Upload className="size-4" /> Upload Photo
+            <Upload className="size-4" /> Scan Ingredients
           </button>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          The camera scans barcodes automatically — no need to snap a picture.
+          Opens your camera so you can capture the ingredients list on the back of the pack.
         </p>
 
         {candidates && candidates.length > 0 ? (
