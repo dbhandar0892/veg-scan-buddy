@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Loader2, X, Upload, Aperture, HelpCircle } from "lucide-react";
+import { Loader2, X, Upload, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
   lookupBarcode,
@@ -27,7 +27,6 @@ function ScanPage() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
 
@@ -201,25 +200,6 @@ function ScanPage() {
     return { blob: blob ?? file, mime: blob ? "image/jpeg" : file.type || "image/jpeg" };
   };
 
-  const capturePhoto = async () => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) {
-      fileInputRef.current?.click();
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const blob = await new Promise<Blob | null>((r) =>
-      canvas.toBlob((b) => r(b), "image/jpeg", 0.9),
-    );
-    if (!blob) return;
-    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-    await handleImage(file);
-  };
 
   useEffect(() => {
     start();
@@ -244,7 +224,7 @@ function ScanPage() {
           Point your camera at the barcode — we'll detect it automatically.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          No barcode? Tap <span className="font-medium text-foreground">Take Photo</span> to capture the product or its ingredients, or upload an image from your library.
+          No barcode? Tap <span className="font-medium text-foreground">Upload Photo</span> to send a picture of the product or its ingredients.
         </p>
       </div>
 
@@ -262,7 +242,7 @@ function ScanPage() {
             <>
               <div className="pointer-events-none absolute inset-x-8 top-1/2 h-40 -translate-y-1/2 rounded-2xl border-2 border-white/70" />
               <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-white/85">
-                Center the barcode in the frame — or tap Take Photo below
+                Center the barcode in the frame — we'll detect it automatically
               </div>
             </>
           ) : null}
@@ -302,24 +282,17 @@ function ScanPage() {
           ) : null}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <button
-            onClick={capturePhoto}
-            disabled={busy || status !== "scanning"}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-pop disabled:opacity-50"
-          >
-            <Aperture className="size-4" /> Take Photo
-          </button>
+        <div className="mt-4">
           <button
             onClick={() => uploadInputRef.current?.click()}
             disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
             <Upload className="size-4" /> Upload Photo
           </button>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Take Photo captures whatever your camera sees now — the whole product or just its ingredients.
+          The camera scans barcodes automatically — no need to snap a picture.
         </p>
 
         {candidates && candidates.length > 0 ? (
@@ -380,18 +353,6 @@ function ScanPage() {
           </div>
         ) : null}
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleImage(f);
-            e.target.value = "";
-          }}
-        />
         <input
           ref={uploadInputRef}
           type="file"
