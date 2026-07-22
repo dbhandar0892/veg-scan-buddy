@@ -29,7 +29,7 @@ function AboutPage() {
         <h1 className="font-display text-3xl tracking-tight text-foreground">About VegCheck</h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           VegCheck exists to answer one question: <em>can I eat this?</em> Scan a barcode
-          or a photo of the label, and we tell you plainly if a product is vegan,
+          or ingredient label, and we tell you plainly if a product is vegan,
           vegetarian, or contains animal ingredients.
         </p>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
