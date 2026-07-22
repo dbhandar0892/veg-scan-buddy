@@ -437,7 +437,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
         ],
       }),
     }, 18000);
-    if (!res) throw new Error("Photo analysis took too long. Try a clearer photo or enter the barcode.");
+    if (!res) throw new Error("Analysis took too long. Try scanning the ingredient list again, or enter the barcode.");
     if (res.status === 429) throw new Error("Rate limited. Please try again in a moment.");
     if (res.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
     if (!res.ok) throw new Error(`Photo analysis failed (${res.status})`);
