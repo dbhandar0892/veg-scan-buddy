@@ -224,7 +224,7 @@ function ScanPage() {
           Point your camera at the barcode — we'll detect it automatically.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          No barcode? Tap <span className="font-medium text-foreground">Upload Photo</span> to send a picture of the product or its ingredients.
+          No barcode? Tap <span className="font-medium text-foreground">Scan Ingredients</span> to point your camera at the ingredients list.
         </p>
       </div>
 
@@ -288,11 +288,11 @@ function ScanPage() {
             disabled={busy}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
-            <Upload className="size-4" /> Upload Photo
+            <Upload className="size-4" /> Scan Ingredients
           </button>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          The camera scans barcodes automatically — no need to snap a picture.
+          Opens your camera so you can capture the ingredients list on the back of the pack.
         </p>
 
         {candidates && candidates.length > 0 ? (
@@ -357,6 +357,7 @@ function ScanPage() {
           ref={uploadInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
