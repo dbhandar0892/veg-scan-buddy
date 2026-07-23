@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Apple, Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { Apple, Mail, ArrowLeft, Loader2, Leaf } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,7 +10,8 @@ export const Route = createFileRoute("/auth")({
       { title: "Sign in to VegCheck" },
       {
         name: "description",
-        content: "Sign in to VegCheck to sync your scans and save favorites across devices.",
+        content:
+          "Sign in to VegCheck to sync your scans and save favorites across devices.",
       },
       { property: "og:title", content: "Sign in to VegCheck" },
       {
@@ -21,6 +22,10 @@ export const Route = createFileRoute("/auth")({
   }),
   component: AuthPage,
 });
+
+const CREAM = "#fdfcf8";
+const SERIF = "'Fraunces', ui-serif, Georgia, serif";
+const GREEN = "#166534";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -56,7 +61,6 @@ function AuthPage() {
     setError(null);
     setLoading("email");
     try {
-      // Try sign-in first; if user doesn't exist, sign them up.
       const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -84,8 +88,11 @@ function AuthPage() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
-      <header className="flex items-center justify-between px-5 pt-6">
+    <div
+      className="fixed inset-0 flex flex-col"
+      style={{ backgroundColor: CREAM, color: "#1c1917" }}
+    >
+      <header className="flex items-center justify-between px-6 pt-6">
         {mode === "email" ? (
           <button
             onClick={() => {
@@ -93,13 +100,16 @@ function AuthPage() {
               setError(null);
               setEmailSent(false);
             }}
-            className="grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+            className="grid size-9 place-items-center rounded-full text-stone-500 hover:bg-stone-100"
             aria-label="Back"
           >
             <ArrowLeft className="size-5" />
           </button>
         ) : (
-          <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+          <div
+            className="text-[11px] font-semibold uppercase tracking-[0.22em]"
+            style={{ color: GREEN }}
+          >
             VegCheck
           </div>
         )}
@@ -110,7 +120,7 @@ function AuthPage() {
               localStorage.setItem("vegcheck.onboarded", "1");
             }
           }}
-          className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          className="rounded-full px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900"
         >
           Not now
         </Link>
@@ -119,27 +129,33 @@ function AuthPage() {
       <div className="flex flex-1 flex-col justify-center px-6">
         <div className="mx-auto w-full max-w-sm">
           <div className="text-center">
-            <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-primary/10">
-              <img src="/icon-512.png" alt="" className="size-10 rounded-xl" />
+            <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-emerald-100 bg-emerald-50 shadow-[0_10px_24px_-12px_rgba(20,83,45,0.35)]">
+              <Leaf className="size-7" style={{ color: GREEN }} strokeWidth={2.25} />
             </div>
-            <h1 className="mt-6 font-display text-[30px] font-semibold leading-tight tracking-tight text-foreground">
-              {mode === "email" ? "Continue with email" : "Welcome to VegCheck"}
+            <div className="mt-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-stone-400">
+              {mode === "email" ? "Almost there" : "Welcome"}
+            </div>
+            <h1
+              className="mt-2 text-[32px] font-semibold leading-[1.05] tracking-tight text-stone-900"
+              style={{ fontFamily: SERIF }}
+            >
+              {mode === "email" ? "Continue with email" : "Shop with confidence"}
             </h1>
-            <p className="mt-2 text-[15px] text-muted-foreground">
+            <p className="mt-3 text-[15px] leading-relaxed text-stone-500">
               {mode === "email"
-                ? "We'll create your account if you're new."
-                : "Sign in to save your scans and favorites."}
+                ? "We’ll create your account if you’re new."
+                : "Sign in to save your scans and sync favorites across devices."}
             </p>
           </div>
 
           {error ? (
-            <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
             </div>
           ) : null}
 
           {emailSent ? (
-            <div className="mt-6 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               Check your inbox to confirm your email, then sign in.
             </div>
           ) : null}
@@ -149,7 +165,7 @@ function AuthPage() {
               <button
                 onClick={() => handleOAuth("apple")}
                 disabled={loading !== null}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-foreground py-3.5 text-[15px] font-semibold text-background shadow-soft transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-stone-900 py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-12px_rgba(0,0,0,0.4)] transition-transform active:scale-[0.98] disabled:opacity-60"
               >
                 {loading === "apple" ? (
                   <Loader2 className="size-5 animate-spin" />
@@ -162,7 +178,7 @@ function AuthPage() {
               <button
                 onClick={() => handleOAuth("google")}
                 disabled={loading !== null}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card py-3.5 text-[15px] font-semibold text-foreground shadow-soft transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white py-3.5 text-[15px] font-semibold text-stone-900 shadow-[0_6px_16px_-10px_rgba(0,0,0,0.15)] transition-transform active:scale-[0.98] disabled:opacity-60"
               >
                 {loading === "google" ? (
                   <Loader2 className="size-5 animate-spin" />
@@ -172,13 +188,22 @@ function AuthPage() {
                 Continue with Google
               </button>
 
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-px flex-1 bg-stone-200" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-400">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-stone-200" />
+              </div>
+
               <button
                 onClick={() => {
                   setMode("email");
                   setError(null);
                 }}
                 disabled={loading !== null}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card py-3.5 text-[15px] font-semibold text-foreground shadow-soft transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_28px_-12px_rgba(20,83,45,0.5)] transition-transform active:scale-[0.98] disabled:opacity-60"
+                style={{ backgroundColor: GREEN }}
               >
                 <Mail className="size-5" />
                 Continue with Email
@@ -193,7 +218,7 @@ function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-[15px] text-foreground shadow-soft outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-[15px] text-stone-900 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.08)] outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
               />
               <input
                 type="password"
@@ -202,12 +227,13 @@ function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password (min. 6 characters)"
-                className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-[15px] text-foreground shadow-soft outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-[15px] text-stone-900 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.08)] outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
               />
               <button
                 type="submit"
                 disabled={loading !== null}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary py-3.5 text-[15px] font-semibold text-primary-foreground shadow-card transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_28px_-12px_rgba(20,83,45,0.5)] transition-transform active:scale-[0.98] disabled:opacity-60"
+                style={{ backgroundColor: GREEN }}
               >
                 {loading === "email" ? (
                   <Loader2 className="size-5 animate-spin" />
@@ -217,10 +243,16 @@ function AuthPage() {
             </form>
           )}
 
-          <p className="mt-8 text-center text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-8 text-center text-[11px] leading-relaxed text-stone-400">
             By continuing, you agree to our{" "}
-            <Link to="/terms" className="underline">Terms</Link> and{" "}
-            <Link to="/privacy" className="underline">Privacy Policy</Link>.
+            <Link to="/terms" className="underline decoration-stone-300">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="underline decoration-stone-300">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       </div>
