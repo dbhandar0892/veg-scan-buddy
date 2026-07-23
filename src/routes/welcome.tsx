@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, type ReactNode } from "react";
-import { ScanLine, ShieldCheck, Sparkles, Check } from "lucide-react";
+import { Check } from "lucide-react";
 
 export const Route = createFileRoute("/welcome")({
   head: () => ({
@@ -21,29 +21,54 @@ export const Route = createFileRoute("/welcome")({
   component: WelcomePage,
 });
 
+const CREAM = "#fdfcf8";
+const SERIF = "'Fraunces', ui-serif, Georgia, serif";
+
 type Slide = {
-  headline: string;
+  eyebrow: string;
+  headline: ReactNode;
   description: string;
   illustration: ReactNode;
 };
 
 const slides: Slide[] = [
   {
-    headline: "Know Before You Buy",
+    eyebrow: "01 · Scan",
+    headline: (
+      <>
+        Know before
+        <br />
+        you buy
+      </>
+    ),
     description:
-      "Instantly find out if a food product is Vegan, Vegetarian, or Not Vegetarian before you buy it.",
+      "Instant scanning verdicts that decode complex product labels in seconds.",
     illustration: <ScanIllustration />,
   },
   {
-    headline: "No More Guessing",
+    eyebrow: "02 · Decode",
+    headline: (
+      <>
+        No more
+        <br />
+        guessing
+      </>
+    ),
     description:
-      "We explain confusing ingredients like rennet, gelatin, and carmine in simple language, so you can shop with confidence.",
+      "Easily spot hidden animal derivatives like rennet, gelatin, and carmine.",
     illustration: <IngredientsIllustration />,
   },
   {
-    headline: "Start with 15 Free Scans",
+    eyebrow: "03 · Start",
+    headline: (
+      <>
+        Let’s get
+        <br />
+        started
+      </>
+    ),
     description:
-      "Try VegCheck with 15 free scans. No credit card required. Upgrade anytime for unlimited scanning.",
+      "Kickstart your journey with 15 free scans. No credit card required.",
     illustration: <FreeScansIllustration />,
   },
 ];
@@ -61,7 +86,10 @@ function WelcomePage() {
     navigate({ to: "/auth" });
   };
 
-  const next = () => setIndex((i) => Math.min(i + 1, slides.length - 1));
+  const next = () => {
+    if (index >= slides.length - 1) return goAuth();
+    setIndex((i) => Math.min(i + 1, slides.length - 1));
+  };
   const prev = () => setIndex((i) => Math.max(i - 1, 0));
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -80,15 +108,23 @@ function WelcomePage() {
     deltaX.current = 0;
   };
 
+  const isLast = index === slides.length - 1;
+
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
-      <header className="flex items-center justify-between px-5 pt-6">
-        <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+    <div
+      className="fixed inset-0 flex flex-col"
+      style={{ backgroundColor: CREAM, color: "#1c1917" }}
+    >
+      <header className="flex items-center justify-between px-6 pt-6">
+        <div
+          className="text-[11px] font-semibold uppercase tracking-[0.22em]"
+          style={{ color: "#166534" }}
+        >
           VegCheck
         </div>
         <button
           onClick={goAuth}
-          className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          className="rounded-full px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors"
         >
           Skip
         </button>
@@ -107,16 +143,22 @@ function WelcomePage() {
           {slides.map((s, i) => (
             <div
               key={i}
-              className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 pb-8 pt-4"
+              className="flex h-full w-full shrink-0 flex-col items-center justify-between px-8 pt-6 pb-4"
             >
               <div className="flex flex-1 items-center justify-center w-full">
                 {s.illustration}
               </div>
               <div className="mx-auto max-w-sm text-center">
-                <h1 className="font-display text-[34px] font-semibold leading-tight tracking-tight text-foreground">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-stone-400">
+                  {s.eyebrow}
+                </div>
+                <h1
+                  className="mt-3 text-[38px] font-semibold leading-[1.05] tracking-tight text-stone-900"
+                  style={{ fontFamily: SERIF }}
+                >
                   {s.headline}
                 </h1>
-                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+                <p className="mt-4 text-[15px] leading-relaxed text-stone-500">
                   {s.description}
                 </p>
               </div>
@@ -126,38 +168,31 @@ function WelcomePage() {
       </div>
 
       <footer
-        className="px-6 pt-2 pb-8"
-        style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
+        className="px-6 pt-3 pb-6"
+        style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="mb-6 flex justify-center gap-2">
+        <div className="mb-5 flex justify-center gap-1.5">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setIndex(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={[
-                "h-2 rounded-full transition-all",
-                i === index ? "w-8 bg-primary" : "w-2 bg-border",
-              ].join(" ")}
+              className="h-1.5 rounded-full transition-all duration-300"
+              style={{
+                width: i === index ? 24 : 6,
+                backgroundColor: i === index ? "#166534" : "#e7e5e4",
+              }}
             />
           ))}
         </div>
 
-        {index === slides.length - 1 ? (
-          <button
-            onClick={goAuth}
-            className="w-full rounded-2xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-card transition-transform active:scale-[0.98]"
-          >
-            Start Scanning
-          </button>
-        ) : (
-          <button
-            onClick={next}
-            className="w-full rounded-2xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-card transition-transform active:scale-[0.98]"
-          >
-            Continue
-          </button>
-        )}
+        <button
+          onClick={next}
+          className="w-full rounded-2xl py-4 text-[15px] font-semibold text-white shadow-[0_10px_30px_-10px_rgba(20,83,45,0.45)] transition-transform active:scale-[0.98]"
+          style={{ backgroundColor: "#166534" }}
+        >
+          {isLast ? "Get started" : "Continue"}
+        </button>
       </footer>
     </div>
   );
@@ -166,22 +201,57 @@ function WelcomePage() {
 function ScanIllustration() {
   return (
     <div className="relative flex items-center justify-center">
-      <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-primary/15 via-primary/5 to-transparent blur-2xl" />
-      <div className="relative flex h-[340px] w-[240px] flex-col items-center justify-between rounded-[2.5rem] border border-border bg-card p-4 shadow-card">
-        <div className="mt-2 h-4 w-16 rounded-full bg-muted" />
-        <div className="flex h-40 w-full items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/40">
-          <ScanLine className="size-16 text-primary/70" strokeWidth={1.5} />
-        </div>
-        <div className="w-full space-y-2">
-          <div className="flex items-center gap-2 rounded-2xl bg-primary px-3 py-2.5 text-primary-foreground">
-            <div className="grid size-6 place-items-center rounded-full bg-primary-foreground/20">
-              <Check className="size-4" strokeWidth={3} />
+      <div
+        className="absolute size-64 rounded-full blur-3xl"
+        style={{ backgroundColor: "rgba(16,185,129,0.18)" }}
+      />
+      <div
+        className="relative flex h-72 w-52 flex-col rounded-[28px] border border-stone-100 bg-white p-4 shadow-[0_24px_48px_-16px_rgba(20,83,45,0.25)]"
+        style={{ transform: "rotate(-4deg)" }}
+      >
+        <div className="h-36 w-full overflow-hidden rounded-2xl">
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, #34d399 0%, #059669 100%)",
+            }}
+          >
+            <div className="grid size-14 place-items-center rounded-full bg-white/25 backdrop-blur-sm">
+              <Check className="size-8 text-white" strokeWidth={3} />
             </div>
-            <div className="text-sm font-semibold">Vegetarian</div>
           </div>
-          <div className="h-2 w-3/4 rounded-full bg-muted" />
-          <div className="h-2 w-1/2 rounded-full bg-muted" />
         </div>
+        <div className="mt-4 space-y-2">
+          <div
+            className="text-[9px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: "#166534" }}
+          >
+            Verdict
+          </div>
+          <div
+            className="text-lg font-semibold text-stone-900"
+            style={{ fontFamily: SERIF }}
+          >
+            Vegetarian
+          </div>
+          <div className="flex gap-1.5 pt-1">
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+              Dairy
+            </span>
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-600">
+              12 items
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        className="absolute -bottom-4 -right-2 rounded-2xl border border-stone-100 bg-white px-3 py-2 shadow-[0_12px_24px_-8px_rgba(0,0,0,0.12)]"
+        style={{ transform: "rotate(6deg)" }}
+      >
+        <div className="text-[9px] font-bold uppercase tracking-widest text-stone-400">
+          Scanned
+        </div>
+        <div className="text-xs font-semibold text-stone-900">0.4s</div>
       </div>
     </div>
   );
@@ -189,42 +259,92 @@ function ScanIllustration() {
 
 function IngredientsIllustration() {
   return (
-    <div className="relative flex items-center justify-center">
-      <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-primary/15 via-primary/5 to-transparent blur-2xl" />
-      <div className="relative w-[280px] space-y-3">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Ingredients
-          </div>
-          <p className="text-xs leading-relaxed text-foreground">
-            Sugar, cocoa butter, milk,{" "}
-            <span className="rounded bg-amber-500/20 px-1 text-amber-700 dark:text-amber-300">
-              rennet
-            </span>
-            , soy lecithin,{" "}
-            <span className="rounded bg-amber-500/20 px-1 text-amber-700 dark:text-amber-300">
-              carmine
-            </span>
-            , natural flavors,{" "}
-            <span className="rounded bg-amber-500/20 px-1 text-amber-700 dark:text-amber-300">
-              gelatin
-            </span>
-            .
-          </p>
+    <div className="relative flex h-72 w-full items-center justify-center">
+      <div
+        className="absolute size-64 rounded-full blur-3xl"
+        style={{ backgroundColor: "rgba(251,191,36,0.14)" }}
+      />
+      <div className="relative flex items-end gap-[-16px]">
+        <IngredientCard
+          tone="rose"
+          label="Avoid"
+          name="Carmine"
+          note="Insect derived"
+          rotate={-12}
+          z={10}
+        />
+        <IngredientCard
+          tone="stone"
+          label="Checking"
+          name="Gelatin"
+          note="Animal bones"
+          rotate={0}
+          z={20}
+          featured
+        />
+        <IngredientCard
+          tone="amber"
+          label="Alert"
+          name="Rennet"
+          note="From calf stomach"
+          rotate={12}
+          z={10}
+        />
+      </div>
+    </div>
+  );
+}
+
+function IngredientCard({
+  tone,
+  label,
+  name,
+  note,
+  rotate,
+  z,
+  featured,
+}: {
+  tone: "rose" | "amber" | "stone";
+  label: string;
+  name: string;
+  note: string;
+  rotate: number;
+  z: number;
+  featured?: boolean;
+}) {
+  const tones = {
+    rose: { bg: "#fff1f2", border: "#fecdd3", accent: "#be123c" },
+    amber: { bg: "#fffbeb", border: "#fde68a", accent: "#b45309" },
+    stone: { bg: "#ffffff", border: "#e7e5e4", accent: "#78716c" },
+  }[tone];
+  const size = featured ? "w-28 h-40" : "w-24 h-36";
+  const shadow = featured
+    ? "shadow-[0_20px_40px_-12px_rgba(0,0,0,0.18)]"
+    : "shadow-[0_12px_24px_-10px_rgba(0,0,0,0.15)]";
+  return (
+    <div
+      className={`${size} ${shadow} flex flex-col justify-between rounded-2xl border p-3 -mx-1`}
+      style={{
+        backgroundColor: tones.bg,
+        borderColor: tones.border,
+        transform: `rotate(${rotate}deg)`,
+        zIndex: z,
+      }}
+    >
+      <span
+        className="text-[9px] font-bold uppercase tracking-[0.18em]"
+        style={{ color: tones.accent }}
+      >
+        {label}
+      </span>
+      <div>
+        <div
+          className="text-sm font-semibold leading-tight text-stone-900"
+          style={{ fontFamily: SERIF }}
+        >
+          {name}
         </div>
-        <div className="ml-6 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-start gap-3">
-            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10">
-              <Sparkles className="size-4 text-primary" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-foreground">Gelatin</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                Made from animal bones and skin. Not vegetarian.
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="mt-0.5 text-[10px] text-stone-500">{note}</div>
       </div>
     </div>
   );
@@ -232,27 +352,32 @@ function IngredientsIllustration() {
 
 function FreeScansIllustration() {
   return (
-    <div className="relative flex items-center justify-center">
-      <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-primary/15 via-primary/5 to-transparent blur-2xl" />
-      <div className="relative flex h-[340px] w-[240px] flex-col rounded-[2.5rem] border border-border bg-card p-4 shadow-card">
-        <div className="mx-auto mt-1 h-4 w-16 rounded-full bg-muted" />
-        <div className="mt-6 flex flex-col items-center gap-3 text-center">
-          <div className="grid size-16 place-items-center rounded-full bg-primary/10">
-            <ShieldCheck className="size-8 text-primary" strokeWidth={2} />
+    <div className="relative flex h-72 items-center justify-center">
+      <div
+        className="absolute size-64 rounded-full blur-3xl"
+        style={{ backgroundColor: "rgba(22,101,52,0.22)" }}
+      />
+      <div
+        className="relative grid size-56 place-items-center rounded-full border-[10px] shadow-[0_28px_56px_-20px_rgba(20,83,45,0.5)]"
+        style={{ backgroundColor: "#166534", borderColor: CREAM }}
+      >
+        <div className="text-center text-white">
+          <div
+            className="text-[64px] font-semibold leading-none"
+            style={{ fontFamily: SERIF }}
+          >
+            15
           </div>
-          <div className="font-display text-lg font-semibold text-foreground">
-            Vegan
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Oat Milk · Barista Edition
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-100">
+            Free scans
           </div>
         </div>
-        <div className="mt-auto flex justify-center">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-soft">
-            <Sparkles className="size-3.5" />
-            15 Free Scans Included
-          </div>
-        </div>
+      </div>
+      <div
+        className="absolute -bottom-2 rounded-full border border-stone-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-stone-700 shadow-md"
+        style={{ right: "10%" }}
+      >
+        No card required
       </div>
     </div>
   );
