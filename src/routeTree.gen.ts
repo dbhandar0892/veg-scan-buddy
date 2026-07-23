@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -18,17 +17,11 @@ import { Route as ScanRouteImport } from './routes/scan'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResultIdRouteImport } from './routes/result.$id'
 import { Route as IngredientSlugRouteImport } from './routes/ingredient.$slug'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -69,11 +62,6 @@ const FavoritesRoute = FavoritesRouteImport.update({
   path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -98,7 +86,6 @@ const IngredientSlugRoute = IngredientSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
@@ -107,14 +94,12 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
@@ -123,7 +108,6 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
 }
@@ -131,7 +115,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
@@ -140,7 +123,6 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
 }
@@ -149,7 +131,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/auth'
     | '/favorites'
     | '/history'
     | '/privacy'
@@ -158,14 +139,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/terms'
-    | '/welcome'
     | '/ingredient/$slug'
     | '/result/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/auth'
     | '/favorites'
     | '/history'
     | '/privacy'
@@ -174,14 +153,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/terms'
-    | '/welcome'
     | '/ingredient/$slug'
     | '/result/$id'
   id:
     | '__root__'
     | '/'
     | '/about'
-    | '/auth'
     | '/favorites'
     | '/history'
     | '/privacy'
@@ -190,7 +167,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/terms'
-    | '/welcome'
     | '/ingredient/$slug'
     | '/result/$id'
   fileRoutesById: FileRoutesById
@@ -198,7 +174,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AuthRoute: typeof AuthRoute
   FavoritesRoute: typeof FavoritesRoute
   HistoryRoute: typeof HistoryRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -207,20 +182,12 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
-  WelcomeRoute: typeof WelcomeRoute
   IngredientSlugRoute: typeof IngredientSlugRoute
   ResultIdRoute: typeof ResultIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -277,13 +244,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -318,7 +278,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AuthRoute: AuthRoute,
   FavoritesRoute: FavoritesRoute,
   HistoryRoute: HistoryRoute,
   PrivacyRoute: PrivacyRoute,
@@ -327,10 +286,19 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  WelcomeRoute: WelcomeRoute,
   IngredientSlugRoute: IngredientSlugRoute,
   ResultIdRoute: ResultIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
