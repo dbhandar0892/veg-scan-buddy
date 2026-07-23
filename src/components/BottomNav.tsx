@@ -18,6 +18,7 @@ const items: NavItem[] = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname === "/welcome" || pathname === "/auth") return null;
   return (
     <nav
       className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/85 backdrop-blur-lg"
