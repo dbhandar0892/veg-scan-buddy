@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/welcome")({
   head: () => ({
@@ -116,6 +116,14 @@ function WelcomePage() {
       style={{ backgroundColor: CREAM, color: "#1c1917" }}
     >
       <header className="flex items-center justify-between px-6 pt-6">
+        <button
+          onClick={prev}
+          disabled={index === 0}
+          aria-label="Go back"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 disabled:invisible"
+        >
+          <ChevronLeft className="size-5" strokeWidth={2.5} />
+        </button>
         <div
           className="text-[11px] font-semibold uppercase tracking-[0.22em]"
           style={{ color: "#166534" }}
