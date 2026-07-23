@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/welcome")({
   head: () => ({
