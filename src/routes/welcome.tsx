@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ScanLine, ShieldCheck, Sparkles, Check } from "lucide-react";
 
 export const Route = createFileRoute("/welcome")({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/welcome")({
 type Slide = {
   headline: string;
   description: string;
-  illustration: JSX.Element;
+  illustration: ReactNode;
 };
 
 const slides: Slide[] = [
