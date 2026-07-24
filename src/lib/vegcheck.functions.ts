@@ -116,17 +116,19 @@ async function analyzeAndLearn(
         let finalExplanation = derived.explanation;
         let finalConfidence = derived.confidence;
 
+        let verification: "unverified" | "community" | "manufacturer" =
+          manufacturerConfirmed ? "manufacturer" : "community";
+
         if (manufacturerConfirmed) {
-          // Manufacturer explicitly confirms vegetarian-friendly. Trust that
-          // over any lingering "unknown" from an ingredient we couldn't pin
-          // down individually, and phrase the message coherently.
           const meatLike = patched.find((h) => h.vegetarian === false);
           const nonVegan = patched.find((h) => h.vegan === false && h.vegetarian !== false);
           if (meatLike) {
-            // Manufacturer says veg but an ingredient reads as meat — keep the
-            // stricter verdict; don't silently override.
+            // Stricter verdict wins — drop the manufacturer badge so the UI
+            // doesn't show a contradictory "company confirms vegetarian" line
+            // under a "not vegetarian" verdict.
             finalStatus = "not_vegetarian";
             finalExplanation = `Contains ${meatLike.name.toLowerCase()}.`;
+            verification = "community";
           } else if (nonVegan) {
             finalStatus = "vegetarian";
             finalExplanation = `The company confirms this product is vegetarian friendly, but it isn't vegan because it contains ${nonVegan.name.toLowerCase()}.`;
@@ -141,12 +143,18 @@ async function analyzeAndLearn(
           }
         }
 
+        // Never surface a "manufacturer confirms vegetarian" badge next to a
+        // not-vegetarian verdict — that contradiction breaks user trust.
+        if (finalStatus === "not_vegetarian" && verification === "manufacturer") {
+          verification = "community";
+        }
+
         result = {
           ...derived,
           status: finalStatus,
           explanation: finalExplanation,
           confidence: finalConfidence,
-          verification: manufacturerConfirmed ? "manufacturer" : "community",
+          verification,
         };
       }
 
