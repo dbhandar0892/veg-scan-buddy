@@ -167,14 +167,18 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     const uh = hits.find((h) => h.category === "unknown" || h.vegetarian === null);
     if (uh) {
       const name = uh.name.toLowerCase();
-      const detail =
-        uh.explanation && uh.explanation !== "Not in our ingredient database yet."
-          ? uh.explanation
-          : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
-      explanation = `"${name}" needs a closer look. ${detail}`;
+      const rawDetail = (uh.explanation || "").trim();
+      // Guard against research blurbs that assert a vegetarian/vegan verdict —
+      // leaking those into an "unknown" verdict contradicts the pill above.
+      const contradicts = /\b(is|are)\s+(vegetarian|vegan)\b|\bplant[-\s]?based\b/i.test(rawDetail);
+      const usableDetail = rawDetail && rawDetail !== "Not in our ingredient database yet." && !contradicts
+        ? rawDetail
+        : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
+      explanation = `"${name}" needs a closer look. ${usableDetail}`;
     } else {
       explanation = "Some ingredients couldn't be confirmed against the manufacturer's listing.";
     }
+
   } else if (hasDairyEggHoney) {
     status = "vegetarian";
     const culprits = hits.filter((h) => h.vegan === false && h.vegetarian === true);
