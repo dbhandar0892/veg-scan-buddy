@@ -113,7 +113,7 @@ function ResultPage() {
           />
         </div>
 
-        {product.verification === "manufacturer" ? (
+        {product.status !== "unknown" && product.status !== "not_vegetarian" && product.verification === "manufacturer" ? (
           <p className="mt-3 flex items-center gap-2 text-sm text-vegan">
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-vegan-soft">
               <Check className="size-3.5 stroke-[3]" aria-hidden />
@@ -122,7 +122,7 @@ function ResultPage() {
               ? "The company confirms this product is vegetarian and vegan friendly."
               : "The company confirms this product is vegetarian friendly."}
           </p>
-        ) : product.verification === "community" ? (
+        ) : product.status !== "unknown" && product.status !== "not_vegetarian" && product.verification === "community" ? (
           <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted">
               <Users className="size-3.5" aria-hidden />
