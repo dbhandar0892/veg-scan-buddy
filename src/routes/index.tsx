@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ScanLine, Search, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 
 export const Route = createFileRoute("/")({
@@ -10,6 +10,14 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem("vegcheck.onboarded")) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [navigate]);
+
 
   return (
     <AppShell>
