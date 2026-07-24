@@ -139,7 +139,16 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   if (hasAnimalNonDairy) {
     status = "not_vegetarian";
     const culprit = hits.find((h) => h.vegetarian === false);
-    explanation = culprit ? `Contains ${culprit.name.toLowerCase()}.` : "Contains an animal ingredient.";
+    if (culprit) {
+      const name = culprit.name.toLowerCase();
+      const detail = (culprit.explanation || "").trim();
+      const genericDetail = !detail || /^not in our ingredient database/i.test(detail);
+      explanation = genericDetail
+        ? `Contains ${name}, which is an animal-derived ingredient.`
+        : `Contains ${name} — ${detail.replace(/\s+/g, " ").replace(/\.?$/, ".")}`;
+    } else {
+      explanation = "Contains an animal-derived ingredient.";
+    }
   } else if (hasUnknownIng || unknownCount > 0) {
     status = "unknown";
     const uh = hits.find((h) => h.category === "unknown" || h.vegan === null);
