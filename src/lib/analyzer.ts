@@ -60,9 +60,17 @@ const STOPWORDS = new Set([
 
 export function tokenizeIngredients(text: string): string[] {
   if (!text) return [];
-  // Remove parenthetical percentages and stray punctuation
-  const cleaned = text
-    .replace(/\([^)]*\)/g, " ")
+  // Extract E-numbers hidden inside parentheses (e.g. "colour (120)", "raising
+  // agents (500, 503)") and promote them into standalone tokens BEFORE we
+  // strip parens — otherwise "colour (120)" collapses to just "colour" and we
+  // lose the fact that E120 (cochineal/carmine) is insect-derived.
+  const promoted: string[] = [];
+  const withPromoted = text.replace(/\(([^)]*)\)/g, (_, inner: string) => {
+    const nums = inner.match(/\b[eE]?\s?-?\s?\d{3}[a-zA-Z]?\b/g);
+    if (nums) for (const n of nums) promoted.push("e" + n.replace(/[^0-9a-zA-Z]/g, "").replace(/^e/i, ""));
+    return " ";
+  });
+  const cleaned = (withPromoted + (promoted.length ? ", " + promoted.join(", ") : ""))
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/\d+(\.\d+)?\s*%/g, " ")
     .replace(/\*/g, " ")
