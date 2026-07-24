@@ -126,7 +126,8 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   let unknownCount = 0;
   let hasAnimalNonDairy = false;
   let hasDairyEggHoney = false;
-  let hasUnknownIng = false;
+  let hasUnknownVegetarian = false; // vegetarian status itself is unclear
+  let hasUnknownVeganOnly = false; // vegetarian confirmed, but vegan unclear
 
   for (const h of hits) {
     if (h.slug === null && h.category === "unknown" && h.vegan === null && h.vegetarian === null) {
@@ -136,8 +137,12 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     matched++;
     if (h.vegetarian === false) hasAnimalNonDairy = true;
     else if (h.vegan === false && h.vegetarian === true) hasDairyEggHoney = true;
-    else if (h.vegan === null || h.vegetarian === null) hasUnknownIng = true;
+    else if (h.vegetarian === null) hasUnknownVegetarian = true;
+    else if (h.vegan === null) hasUnknownVeganOnly = true;
   }
+
+  // Fully unmatched tokens block vegetarian determination too.
+  if (unknownCount > 0) hasUnknownVegetarian = true;
 
   const totalConsidered = matched + unknownCount;
   const knownRatio = totalConsidered === 0 ? 0 : matched / totalConsidered;
@@ -157,19 +162,23 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }
-  } else if (hasUnknownIng || unknownCount > 0) {
+  } else if (hasUnknownVegetarian && !hasDairyEggHoney) {
     status = "unknown";
-    const uh = hits.find((h) => h.category === "unknown" || h.vegan === null);
+    const uh = hits.find((h) => h.category === "unknown" || h.vegetarian === null);
     if (uh) {
       const name = uh.name.toLowerCase();
-      const detail =
-        uh.explanation && uh.explanation !== "Not in our ingredient database yet."
-          ? uh.explanation
-          : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
-      explanation = `"${name}" needs a closer look. ${detail}`;
+      const rawDetail = (uh.explanation || "").trim();
+      // Guard against research blurbs that assert a vegetarian/vegan verdict —
+      // leaking those into an "unknown" verdict contradicts the pill above.
+      const contradicts = /\b(is|are)\s+(vegetarian|vegan)\b|\bplant[-\s]?based\b/i.test(rawDetail);
+      const usableDetail = rawDetail && rawDetail !== "Not in our ingredient database yet." && !contradicts
+        ? rawDetail
+        : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
+      explanation = `"${name}" needs a closer look. ${usableDetail}`;
     } else {
       explanation = "Some ingredients couldn't be confirmed against the manufacturer's listing.";
     }
+
   } else if (hasDairyEggHoney) {
     status = "vegetarian";
     const culprits = hits.filter((h) => h.vegan === false && h.vegetarian === true);
@@ -186,6 +195,9 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         ? "dairy, egg, or honey"
         : Array.from(kinds).join(kinds.size === 2 ? " and " : ", ");
     explanation = `Contains ${label} but no meat or animal rennet.`;
+  } else if (hasUnknownVeganOnly) {
+    status = "vegetarian";
+    explanation = "No animal-derived ingredients detected, but some items couldn't be fully confirmed as vegan.";
   } else if (matched > 0) {
     status = "vegan";
     explanation = "No animal-derived ingredients were detected.";
@@ -202,6 +214,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   confidence = Math.max(0, Math.min(1, confidence));
   return { status, confidence, explanation, hits };
 }
+
 
 export function analyzeText(
   text: string,
