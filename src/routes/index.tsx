@@ -25,12 +25,12 @@ function HomePage() {
           VegCheck
         </div>
         <h1 className="mt-3 font-display text-[42px] leading-[1.05] tracking-tight text-foreground">
-          Can I eat this?
+          Know Before You Buy
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Know Before You Buy
+          Find out if any product is Vegan or Vegetarian in seconds.
           <br />
-          Instantly find out if a product is vegan or vegetarian.
+          Avoid hidden animal ingredients and shop with confidence.
         </p>
       </div>
 
