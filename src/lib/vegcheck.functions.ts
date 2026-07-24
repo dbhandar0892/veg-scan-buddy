@@ -54,19 +54,24 @@ async function analyzeAndLearn(
     if (learned.length > 0) result = analyzeText(text, [...known, ...learned]);
   }
 
-  // Step 2: if any hit is still uncertain, do a web-research pass with the
-  // product/brand as context so we can check the manufacturer's own statements.
-  if (result.status === "unknown") {
-    const uncertain = result.hits
-      .filter(
-        (h) =>
-          (h.category === "unknown" && h.slug === null) ||
-          h.vegan === null ||
-          h.vegetarian === null,
-      )
-      .slice(0, 10)
-      .map((h) => ({ token: h.token, name: h.name }));
-    if (uncertain.length > 0) {
+  // Step 2: if ANY hit is still ambiguous — generic terms like "spices",
+  // "natural flavors", "colour", "sugar", or brand-new tokens — do a live
+  // web-research pass with the product/brand as context so we can check the
+  // manufacturer's own statements and reputable vegan/vegetarian databases
+  // before falling back to "Unable to Confirm". We run this even when the
+  // overall status is already vegetarian/vegan, so a "vegetarian" verdict
+  // can be upgraded to "vegan" once ambiguous items are pinned down.
+  const uncertain = result.hits
+    .filter(
+      (h) =>
+        (h.category === "unknown" && h.slug === null) ||
+        h.vegan === null ||
+        h.vegetarian === null,
+    )
+    .slice(0, 10)
+    .map((h) => ({ token: h.token, name: h.name }));
+  if (uncertain.length > 0) {
+    {
       const { researchUncertain } = await import("./learn.server");
       const verdicts = await researchUncertain(uncertain, ctx);
       if (verdicts.length > 0) {
