@@ -29,8 +29,6 @@ function HomePage() {
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
           Find out if any product is Vegan or Vegetarian in seconds.
-          <br />
-          Avoid hidden animal ingredients and shop with confidence.
         </p>
       </div>
 
