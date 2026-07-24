@@ -28,7 +28,9 @@ function HomePage() {
           Can I eat this?
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Scan a barcode or ingredient label. Get an honest answer in seconds.
+          Know Before You Buy
+          <br />
+          Instantly find out if a product is vegan or vegetarian.
         </p>
       </div>
 
