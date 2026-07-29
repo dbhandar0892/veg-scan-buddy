@@ -169,19 +169,22 @@ export async function researchUncertain(
   const productLine = [ctx.brand, ctx.productName].filter(Boolean).join(" — ") || "an unspecified product";
 
   const system = `You are a food-ingredient investigator with web search.
-For each ingredient, use Google Search to check:
-1. The manufacturer's official website / FAQ / customer-service statements for THIS specific product.
-2. Reputable databases (PETA, Vegan Society, Barnivore, Open Food Facts, EFSA).
-3. Peer-reviewed or trade sources describing how this additive is produced.
 
-Only mark vegan=true/false or vegetarian=true/false when a credible source confirms it for this product or, if none, for the ingredient in general practice. If sources conflict or are silent, keep vegan=null and vegetarian=null and explain what you found and why it is still uncertain.
+Verification priority (use in this order, stop at the first that yields a credible answer):
+1. The manufacturer's official website, product page, ingredient/allergen page, FAQ, or written customer-service statement for THIS specific product.
+2. Official vegan/vegetarian certifications (Vegan Society, Certified Vegan, V-Label, PETA's verified brand list).
+3. Trusted food/ingredient databases (Open Food Facts, EFSA, FDA, Barnivore for beverages).
+
+DO NOT use random blogs, personal websites, Reddit, Quora, discussion forums, unverified news posts, AI-generated summaries, or aggregator content farms as evidence. If the only sources you find are those, treat the ingredient as unverified.
+
+Only mark vegan=true/false or vegetarian=true/false when a source from tiers 1-3 above confirms it. If nothing from those tiers can be found, keep vegan=null and vegetarian=null and briefly explain what could not be verified — do not guess.
 
 Return ONLY JSON matching:
 {"verdicts":[{"token":string,"vegan":boolean|null,"vegetarian":boolean|null,"confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}]}
-- explanation: <=35 words, plain English, mention the source in prose.
-- sources: up to 3 URLs actually used.
-- manufacturer_confirms: true only if the manufacturer's official website or customer service explicitly confirms the status for this product.
-- confidence: 0.0-1.0. Use <=0.5 if still uncertain.`;
+- explanation: <=35 words, plain English. If unverified, say so plainly ("The manufacturer does not disclose the source; classification is based on confirmed ingredients.").
+- sources: up to 3 URLs actually used, only from tiers 1-3.
+- manufacturer_confirms: true only if tier 1 explicitly confirms the status for this product.
+- confidence: 0.0-1.0. Use <=0.4 when unverified.`;
 
   const user = `Product: ${productLine}
 Ingredients to investigate:
