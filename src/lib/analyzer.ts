@@ -121,6 +121,32 @@ function matchToken(
   return best;
 }
 
+// Commonly ambiguous ingredients that are, in general practice, plant-based
+// or microbial. When the manufacturer doesn't specify the source, don't block
+// classification — treat optimistically and append a transparency note.
+// Values: "vegan" = usually plant-based (e.g. sugar, natural flavors);
+//         "vegetarian" = usually not meat-derived but vegan status unclear
+//         (e.g. mono/diglycerides, glycerin, vitamin D3, stearic acid).
+type AmbiguousDefault = "vegan" | "vegetarian";
+const AMBIGUOUS_DEFAULTS: { patterns: RegExp; kind: AmbiguousDefault; label: string }[] = [
+  { patterns: /\b(sugar|cane sugar|sugars)\b/i, kind: "vegan", label: "sugar" },
+  { patterns: /\bnatural (and artificial )?flavou?rs?\b/i, kind: "vegetarian", label: "natural flavors" },
+  { patterns: /\bartificial flavou?rs?\b/i, kind: "vegan", label: "artificial flavors" },
+  { patterns: /\benzymes?\b/i, kind: "vegetarian", label: "enzymes" },
+  { patterns: /\bmono[-\s]?and[-\s]?diglycerides?\b|\bmono[-\s]?diglycerides?\b|\bdiglycerides?\b/i, kind: "vegetarian", label: "mono- and diglycerides" },
+  { patterns: /\bglycerin(e)?\b|\bglycerol\b/i, kind: "vegetarian", label: "glycerin" },
+  { patterns: /\bvitamin\s?d3\b|\bcholecalciferol\b/i, kind: "vegetarian", label: "vitamin D3" },
+  { patterns: /\bstearic acid\b/i, kind: "vegetarian", label: "stearic acid" },
+  { patterns: /\bmagnesium stearate\b/i, kind: "vegetarian", label: "magnesium stearate" },
+  { patterns: /\blecithin\b/i, kind: "vegan", label: "lecithin" },
+];
+
+function ambiguousDefaultFor(h: IngredientHit): { kind: AmbiguousDefault; label: string } | null {
+  const hay = `${h.name} ${h.token}`;
+  for (const rule of AMBIGUOUS_DEFAULTS) if (rule.patterns.test(hay)) return { kind: rule.kind, label: rule.label };
+  return null;
+}
+
 export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   let matched = 0;
   let unknownCount = 0;
@@ -128,8 +154,23 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   let hasDairyEggHoney = false;
   let hasUnknownVegetarian = false; // vegetarian status itself is unclear
   let hasUnknownVeganOnly = false; // vegetarian confirmed, but vegan unclear
+  const unverifiedNotes: string[] = [];
 
   for (const h of hits) {
+    // Absorb known-ambiguous items into an optimistic default with a note,
+    // rather than letting them force an "Unable to Confirm" verdict.
+    if (h.vegetarian === null || (h.slug === null && h.category === "unknown")) {
+      const def = ambiguousDefaultFor(h);
+      if (def) {
+        matched++;
+        if (def.kind === "vegan") hasUnknownVeganOnly ||= false; // stays vegan-eligible
+        else hasUnknownVeganOnly = true; // vegetarian-safe but vegan unclear
+        unverifiedNotes.push(
+          `Contains ${def.label}. The manufacturer does not specify its source, so it could not be independently verified — classification is based on the confirmed ingredients.`
+        );
+        continue;
+      }
+    }
     if (h.slug === null && h.category === "unknown" && h.vegan === null && h.vegetarian === null) {
       unknownCount++;
       continue;
@@ -164,13 +205,9 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     }
   } else if (hasUnknownVegetarian && !hasDairyEggHoney) {
     status = "unknown";
-    // Pick a hit that is ACTUALLY still uncertain about vegetarian status.
-    // A hit whose vegetarian was resolved to true (e.g. "sugar" confirmed
-    // plant-based via web research) must not be surfaced here — its own
-    // explanation will contradict the "needs a closer look" framing.
     const uh =
-      hits.find((h) => h.vegetarian === null && h.vegan === null) ??
-      hits.find((h) => h.vegetarian === null);
+      hits.find((h) => h.vegetarian === null && h.vegan === null && !ambiguousDefaultFor(h)) ??
+      hits.find((h) => h.vegetarian === null && !ambiguousDefaultFor(h));
     if (uh) {
       const name = uh.name.toLowerCase();
       const rawDetail = (uh.explanation || "").trim();
@@ -208,6 +245,11 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   } else {
     status = "unknown";
     explanation = "No ingredients could be identified.";
+  }
+
+  // Append transparency notes about ambiguous items we couldn't verify.
+  if (unverifiedNotes.length > 0 && (status === "vegan" || status === "vegetarian")) {
+    explanation = `${explanation} ${unverifiedNotes.slice(0, 3).join(" ")}`.trim();
   }
 
   let confidence = knownRatio;
