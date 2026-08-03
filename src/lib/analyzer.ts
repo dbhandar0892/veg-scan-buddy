@@ -147,7 +147,68 @@ function ambiguousDefaultFor(h: IngredientHit): { kind: AmbiguousDefault; label:
   return null;
 }
 
+// Generic label words ("colour", "flavouring", "emulsifier") are not animal
+// ingredients by themselves — only the specific substance behind them is.
+// Phrase verdicts accordingly so we never imply "colour = not vegetarian".
+const GENERIC_CATEGORIES: { pattern: RegExp; label: string }[] = [
+  { pattern: /\bcolou?rs?\b|\bcolou?ring\b/i, label: "colour" },
+  { pattern: /\bflavou?rs?\b|\bflavou?ring\b/i, label: "flavouring" },
+  { pattern: /\bemulsifiers?\b/i, label: "emulsifier" },
+  { pattern: /\benzymes?\b/i, label: "enzyme" },
+  { pattern: /\bstabili[sz]ers?\b/i, label: "stabiliser" },
+  { pattern: /\bthickeners?\b/i, label: "thickener" },
+  { pattern: /\bgelling agents?\b/i, label: "gelling agent" },
+  { pattern: /\banti[-\s]?caking agents?\b/i, label: "anti-caking agent" },
+  { pattern: /\bglazing agents?\b|\bglaze\b/i, label: "glazing agent" },
+  { pattern: /\badditives?\b/i, label: "additive" },
+  { pattern: /\bshortening\b/i, label: "shortening" },
+];
+
+function genericCategoryOf(name: string): string | null {
+  // Only treat as generic if the name is essentially just the category word.
+  const n = name.trim();
+  if (n.split(/\s+/).length > 3) return null;
+  for (const g of GENERIC_CATEGORIES) if (g.pattern.test(n)) return g.label;
+  return null;
+}
+
+// Named animal-derived substances we can surface behind a generic label.
+const SPECIFIC_SUBSTANCES = [
+  "cochineal",
+  "carmine",
+  "carminic acid",
+  "shellac",
+  "gelatin",
+  "gelatine",
+  "isinglass",
+  "lard",
+  "tallow",
+  "rennet",
+  "beeswax",
+  "lanolin",
+  "l-cysteine",
+  "castoreum",
+  "ambergris",
+];
+
+function specificSubstanceFrom(detail: string): string | null {
+  const d = detail.toLowerCase();
+  for (const s of SPECIFIC_SUBSTANCES) if (d.includes(s)) return s;
+  return null;
+}
+
+function cleanDetail(raw: string | undefined): string {
+  const detail = (raw || "").trim();
+  if (!detail || /^not in our ingredient database/i.test(detail)) return "";
+  return detail.replace(/\s+/g, " ").replace(/\.?$/, ".");
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
+
   let matched = 0;
   let unknownCount = 0;
   let hasAnimalNonDairy = false;
@@ -195,14 +256,25 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     const culprit = hits.find((h) => h.vegetarian === false);
     if (culprit) {
       const name = culprit.name.toLowerCase();
-      const detail = (culprit.explanation || "").trim();
-      const genericDetail = !detail || /^not in our ingredient database/i.test(detail);
-      explanation = genericDetail
-        ? `Contains ${name}, which is an animal-derived ingredient.`
-        : `Contains ${name} — ${detail.replace(/\s+/g, " ").replace(/\.?$/, ".")}`;
+      const detail = cleanDetail(culprit.explanation);
+      const generic = genericCategoryOf(name);
+      if (generic) {
+        const specific = specificSubstanceFrom(detail);
+        const lead = specific
+          ? `The ${generic} used in this product is ${specific}`
+          : `The ${generic} used in this product is animal-derived`;
+        explanation = detail
+          ? `${lead}. ${detail} ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`
+          : `${lead}. ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`;
+      } else {
+        explanation = !detail
+          ? `Contains ${name}, which is an animal-derived ingredient.`
+          : `Contains ${name} — ${detail}`;
+      }
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }
+
   } else if (hasUnknownVegetarian && !hasDairyEggHoney) {
     status = "unknown";
     const uh =
