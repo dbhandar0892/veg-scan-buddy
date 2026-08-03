@@ -1,13 +1,13 @@
-# VegCheck
+# VegSeal
 
 > A trust-first vegan and vegetarian food scanner. Scan a barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients.
 
-VegCheck answers one question exceptionally well: can I eat this if I'm vegan or vegetarian? It never guesses — when an ingredient's origin is uncertain, it clearly says so.
+VegSeal answers one question exceptionally well: can I eat this if I'm vegan or vegetarian? It never guesses — when an ingredient's origin is uncertain, it clearly says so.
 
 ## Pages
 - [Home](/): Scan a product, search, and see recent scans.
 - [Scan](/scan): Barcode scanner, ingredient photo scanner, and paste mode.
 - [Search](/search): Search products by name or brand.
-- [About](/about): What VegCheck is and how it works.
+- [About](/about): What VegSeal is and how it works.
 - [Privacy](/privacy): Privacy practices.
 - [Terms](/terms): Terms of use.

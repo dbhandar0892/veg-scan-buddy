@@ -76,14 +76,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#f7fbf7" },
-      { title: "VegCheck — Instantly know if food is vegan or vegetarian" },
+      { title: "VegSeal — Instantly know if food is vegan or vegetarian" },
       {
         name: "description",
         content:
           "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients.",
       },
-      { name: "author", content: "VegCheck" },
-      { property: "og:title", content: "VegCheck — Instantly know if food is vegan or vegetarian" },
+      { name: "author", content: "VegSeal" },
+      { property: "og:title", content: "VegSeal — Instantly know if food is vegan or vegetarian" },
       {
         property: "og:description",
         content:
@@ -91,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "VegCheck — Instantly know if food is vegan or vegetarian" },
+      { name: "twitter:title", content: "VegSeal — Instantly know if food is vegan or vegetarian" },
       { name: "description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
       { property: "og:description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
       { name: "twitter:description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
@@ -127,7 +127,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function ThemeBoot() {
   useEffect(() => {
-    const stored = localStorage.getItem("vegcheck.theme");
+    const stored = localStorage.getItem("vegseal.theme");
     const isDark =
       stored === "dark" ||
       (stored !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);

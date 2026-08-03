@@ -53,11 +53,11 @@ function SettingsPage() {
             App
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-            <Row href="/about" Icon={Info} label="About VegCheck" />
+            <Row href="/about" Icon={Info} label="About VegSeal" />
             <Row href="/privacy" Icon={ShieldCheck} label="Privacy" />
             <Row href="/terms" Icon={FileText} label="Terms" />
             <Row
-              href="mailto:hello@vegcheck.app?subject=Feedback"
+              href="mailto:hello@vegseal.app?subject=Feedback"
               external
               Icon={MessageSquare}
               label="Send feedback"
@@ -71,7 +71,7 @@ function SettingsPage() {
           </ul>
         </section>
 
-        <p className="pt-2 text-center text-xs text-muted-foreground">VegCheck v1.0</p>
+        <p className="pt-2 text-center text-xs text-muted-foreground">VegSeal v1.0</p>
       </div>
     </AppShell>
   );

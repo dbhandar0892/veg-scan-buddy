@@ -15,8 +15,8 @@ function HistoryPage() {
   useEffect(() => {
     const load = () => setItems(getHistory());
     load();
-    window.addEventListener("vegcheck:history", load);
-    return () => window.removeEventListener("vegcheck:history", load);
+    window.addEventListener("vegseal:history", load);
+    return () => window.removeEventListener("vegseal:history", load);
   }, []);
 
   const filtered = items.filter((i) =>

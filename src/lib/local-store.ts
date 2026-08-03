@@ -11,9 +11,9 @@ export interface HistoryItem {
   scannedAt: number;
 }
 
-const HISTORY_KEY = "vegcheck.history.v1";
-const FAV_KEY = "vegcheck.favorites.v1";
-const THEME_KEY = "vegcheck.theme";
+const HISTORY_KEY = "vegseal.history.v1";
+const FAV_KEY = "vegseal.favorites.v1";
+const THEME_KEY = "vegseal.theme";
 
 function safeParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
@@ -34,20 +34,20 @@ export function pushHistory(item: HistoryItem) {
   const all = getHistory().filter((h) => h.id !== item.id);
   all.unshift(item);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(all.slice(0, 200)));
-  window.dispatchEvent(new Event("vegcheck:history"));
+  window.dispatchEvent(new Event("vegseal:history"));
 }
 
 export function removeHistory(id: string) {
   if (typeof window === "undefined") return;
   const all = getHistory().filter((h) => h.id !== id);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(all));
-  window.dispatchEvent(new Event("vegcheck:history"));
+  window.dispatchEvent(new Event("vegseal:history"));
 }
 
 export function clearHistory() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(HISTORY_KEY);
-  window.dispatchEvent(new Event("vegcheck:history"));
+  window.dispatchEvent(new Event("vegseal:history"));
 }
 
 export function getFavorites(): HistoryItem[] {
@@ -65,7 +65,7 @@ export function toggleFavorite(item: HistoryItem): boolean {
   const exists = all.some((f) => f.id === item.id);
   const next = exists ? all.filter((f) => f.id !== item.id) : [item, ...all];
   localStorage.setItem(FAV_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event("vegcheck:favorites"));
+  window.dispatchEvent(new Event("vegseal:favorites"));
   return !exists;
 }
 

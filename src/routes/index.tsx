@@ -22,7 +22,7 @@ function HomePage() {
             width={28}
             height={28}
           />
-          VegCheck
+          VegSeal
         </div>
         <h1 className="mt-3 font-display text-[42px] leading-[1.05] tracking-tight text-foreground">
           Know Before You Buy

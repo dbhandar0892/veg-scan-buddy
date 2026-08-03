@@ -4,7 +4,7 @@ import { ArrowLeft, Check, Heart, Share2, Users } from "lucide-react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
-import { getProduct, type AnalyzedProduct } from "@/lib/vegcheck.functions";
+import { getProduct, type AnalyzedProduct } from "@/lib/vegseal.functions";
 import { isFavorite, toggleFavorite } from "@/lib/local-store";
 
 
@@ -47,7 +47,7 @@ function ResultPage() {
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share({
-          title: `VegCheck — ${product.name}`,
+          title: `VegSeal — ${product.name}`,
           text: `${product.name}: ${product.explanation}`,
           url: typeof window !== "undefined" ? window.location.href : undefined,
         });
@@ -146,7 +146,7 @@ function ResultPage() {
         ) : null}
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Analyzed with VegCheck • Trust over guesses
+          Analyzed with VegSeal • Trust over guesses
         </p>
       </div>
     </AppShell>

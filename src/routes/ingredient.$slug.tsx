@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { getIngredient } from "@/lib/vegcheck.functions";
+import { getIngredient } from "@/lib/vegseal.functions";
 
 const ingredientQuery = (slug: string) =>
   queryOptions({

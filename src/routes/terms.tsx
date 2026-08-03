@@ -5,8 +5,8 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms — VegCheck" },
-      { name: "description", content: "Terms of use for VegCheck." },
+      { title: "Terms — VegSeal" },
+      { name: "description", content: "Terms of use for VegSeal." },
     ],
   }),
   component: Page,
@@ -23,11 +23,11 @@ function Page() {
       <div className="px-5 pt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
         <h1 className="font-display text-3xl tracking-tight text-foreground">Terms</h1>
         <p>
-          VegCheck is provided as-is for informational purposes. While we work hard to
+          VegSeal is provided as-is for informational purposes. While we work hard to
           give trustworthy answers, always double-check the label if you have serious
           dietary restrictions, allergies, or medical concerns.
         </p>
-        <p>By using the app you agree that VegCheck is not responsible for purchasing decisions.</p>
+        <p>By using the app you agree that VegSeal is not responsible for purchasing decisions.</p>
       </div>
     </AppShell>
   );

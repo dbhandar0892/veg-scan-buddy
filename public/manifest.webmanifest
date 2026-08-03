@@ -1,6 +1,6 @@
 {
-  "name": "VegCheck — Vegan & Vegetarian Scanner",
-  "short_name": "VegCheck",
+  "name": "VegSeal — Vegan & Vegetarian Scanner",
+  "short_name": "VegSeal",
   "description": "Scan a barcode or ingredient label to instantly know if a product is vegan or vegetarian.",
   "start_url": "/",
   "scope": "/",

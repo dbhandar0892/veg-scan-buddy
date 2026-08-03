@@ -1,4 +1,4 @@
-# VegCheck — Build Plan
+# VegSeal — Build Plan
 
 A mobile-first PWA that answers one question: *Can I eat this if I'm vegan or vegetarian?*
 

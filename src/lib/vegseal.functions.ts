@@ -272,7 +272,7 @@ export const lookupBarcode = createServerFn({ method: "POST" })
 
     const res = await fetch(
       `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(data.barcode)}.json?fields=product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text`,
-      { headers: { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" } },
+      { headers: { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" } },
     );
     if (!res.ok) return null;
     const json = (await res.json()) as {
@@ -506,7 +506,7 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     // there's a confident match, or hand candidates back for the user.
     const searchTerm = [brand, productName].filter(Boolean).join(" ").trim();
     if (searchTerm) {
-      const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
+      const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
       const fields = "code,product_name,brands,image_front_small_url,image_small_url";
       type OffProduct = {
         code?: string;
@@ -661,7 +661,7 @@ export const searchProducts = createServerFn({ method: "POST" })
     // Query Open Food Facts. Prefer the modern search-a-licious endpoint
     // (much better full-text ranking), and fall back to the legacy v2 and
     // CGI search endpoints. Merge and dedupe by barcode.
-    const headers = { "User-Agent": "VegCheck/1.0 (contact@vegcheck.app)" };
+    const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
     const fields = "code,product_name,brands,image_front_small_url,image_small_url";
     const encoded = encodeURIComponent(q);
     const [salRes, v2Res, cgiRes] = await Promise.all([

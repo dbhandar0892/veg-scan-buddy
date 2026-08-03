@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { Search, Loader2, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { searchProducts, lookupBarcode } from "@/lib/vegcheck.functions";
+import { searchProducts, lookupBarcode } from "@/lib/vegseal.functions";
 import { StatusPill } from "@/components/Status";
 import { pushHistory } from "@/lib/local-store";
 

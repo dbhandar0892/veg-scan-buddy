@@ -14,8 +14,8 @@ function FavoritesPage() {
   useEffect(() => {
     const load = () => setItems(getFavorites());
     load();
-    window.addEventListener("vegcheck:favorites", load);
-    return () => window.removeEventListener("vegcheck:favorites", load);
+    window.addEventListener("vegseal:favorites", load);
+    return () => window.removeEventListener("vegseal:favorites", load);
   }, []);
   return (
     <AppShell>
