@@ -119,15 +119,15 @@ function ResultPage() {
               <Check className="size-3.5 stroke-[3]" aria-hidden />
             </span>
             {product.status === "vegan"
-              ? "The company confirms this product is vegetarian and vegan friendly."
-              : "The company confirms this product is vegetarian friendly."}
+              ? "Company confirms this is vegetarian and vegan friendly."
+              : "Company confirms this is vegetarian friendly."}
           </p>
         ) : product.status !== "unknown" && product.status !== "not_vegetarian" && product.verification === "community" ? (
           <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted">
               <Users className="size-3.5" aria-hidden />
             </span>
-            Not confirmed by the company; verified by independent sources.
+            Verified by independent sources.
           </p>
         ) : null}
 

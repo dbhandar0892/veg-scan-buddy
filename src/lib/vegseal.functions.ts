@@ -100,7 +100,7 @@ async function analyzeAndLearn(
               : "";
           const prefix =
             v.vegan === true || v.vegetarian === true
-              ? "Manufacturer doesn't specify, but independent sources confirm this is plant-based. "
+              ? "Confirmed plant-based by independent sources. "
               : "";
           return {
             ...h,
@@ -131,14 +131,14 @@ async function analyzeAndLearn(
             verification = "community";
           } else if (nonVegan) {
             finalStatus = "vegetarian";
-            finalExplanation = `The company confirms this product is vegetarian friendly, but it isn't vegan because it contains ${nonVegan.name.toLowerCase()}.`;
+            finalExplanation = `Company confirms vegetarian friendly, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           } else {
             const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);
             finalStatus = allVegan ? "vegan" : "vegetarian";
             finalExplanation = finalStatus === "vegan"
-              ? "The company confirms this product is vegan friendly."
-              : "The company confirms this product is vegetarian friendly.";
+              ? "Company confirms this is vegan friendly."
+              : "Company confirms this is vegetarian friendly.";
             finalConfidence = Math.max(finalConfidence, 0.9);
           }
         }

@@ -227,7 +227,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         if (def.kind === "vegan") hasUnknownVeganOnly ||= false; // stays vegan-eligible
         else hasUnknownVeganOnly = true; // vegetarian-safe but vegan unclear
         unverifiedNotes.push(
-          `Contains ${def.label}. The manufacturer does not specify its source, so it could not be independently verified — classification is based on the confirmed ingredients.`
+          `Contains ${def.label} from an unspecified source.`
         );
         continue;
       }
@@ -261,14 +261,13 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       if (generic) {
         const specific = specificSubstanceFrom(detail);
         const lead = specific
-          ? `The ${generic} used in this product is ${specific}`
-          : `The ${generic} used in this product is animal-derived`;
-        explanation = detail
-          ? `${lead}. ${detail} ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`
-          : `${lead}. ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`;
+          ? `The ${generic} used is ${specific}`
+          : `The ${generic} used is animal-derived`;
+        const tail = `${capitalize(generic)} can be plant-based, but this one isn't.`;
+        explanation = detail ? `${lead}. ${detail} ${tail}` : `${lead}. ${tail}`;
       } else {
         explanation = !detail
-          ? `Contains ${name}, which is an animal-derived ingredient.`
+          ? `Contains ${name}, an animal-derived ingredient.`
           : `Contains ${name} — ${detail}`;
       }
     } else {
@@ -286,8 +285,8 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       const contradicts = /\b(is|are)\s+(vegetarian|vegan)\b|\bplant[-\s]?based\b|\bconfirm(s|ed)?\b/i.test(rawDetail);
       const usableDetail = rawDetail && rawDetail !== "Not in our ingredient database yet." && !contradicts
         ? rawDetail
-        : `The manufacturer doesn't specify whether the ${name} used is plant- or animal-derived.`;
-      explanation = `"${name}" needs a closer look. ${usableDetail}`;
+        : "Its source isn't confirmed.";
+      explanation = `"${name}" needs a closer look — ${usableDetail}`;
     } else {
       explanation = "Some ingredients couldn't be confirmed against the manufacturer's listing.";
     }
@@ -310,7 +309,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     explanation = `Contains ${label} but no meat or animal rennet.`;
   } else if (hasUnknownVeganOnly) {
     status = "vegetarian";
-    explanation = "No animal-derived ingredients detected, but some items couldn't be fully confirmed as vegan.";
+    explanation = "Vegetarian confirmed; a few items couldn't be verified as vegan.";
   } else if (matched > 0) {
     status = "vegan";
     explanation = "No animal-derived ingredients were detected.";
