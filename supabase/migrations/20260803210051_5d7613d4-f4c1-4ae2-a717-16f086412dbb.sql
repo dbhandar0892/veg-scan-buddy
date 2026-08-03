@@ -1,0 +1,1 @@
+DELETE FROM public.products WHERE explanation ILIKE 'Contains colour%' OR explanation ILIKE 'Contains flavour%' OR explanation ILIKE 'Contains emulsifier%' OR explanation ILIKE 'Contains color%';
