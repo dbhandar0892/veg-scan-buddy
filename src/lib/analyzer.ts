@@ -195,14 +195,25 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     const culprit = hits.find((h) => h.vegetarian === false);
     if (culprit) {
       const name = culprit.name.toLowerCase();
-      const detail = (culprit.explanation || "").trim();
-      const genericDetail = !detail || /^not in our ingredient database/i.test(detail);
-      explanation = genericDetail
-        ? `Contains ${name}, which is an animal-derived ingredient.`
-        : `Contains ${name} — ${detail.replace(/\s+/g, " ").replace(/\.?$/, ".")}`;
+      const detail = cleanDetail(culprit.explanation);
+      const generic = genericCategoryOf(name);
+      if (generic) {
+        const specific = specificSubstanceFrom(detail);
+        const lead = specific
+          ? `The ${generic} used in this product is ${specific}`
+          : `The ${generic} used in this product is animal-derived`;
+        explanation = detail
+          ? `${lead}. ${detail} ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`
+          : `${lead}. ${capitalize(generic)} on its own can be plant-based — it's the specific one used here that isn't.`;
+      } else {
+        explanation = !detail
+          ? `Contains ${name}, which is an animal-derived ingredient.`
+          : `Contains ${name} — ${detail}`;
+      }
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }
+
   } else if (hasUnknownVegetarian && !hasDairyEggHoney) {
     status = "unknown";
     const uh =
