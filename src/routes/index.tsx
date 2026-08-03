@@ -28,7 +28,7 @@ function HomePage() {
           Know Before You Buy
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Find out if any product is Vegan or Vegetarian in seconds.
+          Instantly find out if a product is vegan or vegetarian.
         </p>
       </div>
 
