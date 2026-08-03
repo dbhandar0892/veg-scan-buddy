@@ -35,7 +35,7 @@ Rules:
 - If meat, fish, gelatin, rennet, carmine, shellac, isinglass, lard, tallow: vegan=false, vegetarian=false.
 - category: one of plant, animal, microbial, mineral, synthetic, unknown.
 - confidence: 0.0 to 1.0. Use <=0.6 when uncertain.
-- explanation: plain English, under 25 words.
+- explanation: plain English, under 18 words.
 - name: clean canonical name (Title Case, no percentages).
 - aliases: 0-4 common alternate spellings, lowercase.
 
@@ -181,7 +181,7 @@ Only mark vegan=true/false or vegetarian=true/false when a source from tiers 1-3
 
 Return ONLY JSON matching:
 {"verdicts":[{"token":string,"vegan":boolean|null,"vegetarian":boolean|null,"confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}]}
-- explanation: <=35 words, plain English. If unverified, say so plainly ("The manufacturer does not disclose the source; classification is based on confirmed ingredients.").
+- explanation: <=20 words, plain English. If unverified, say so plainly ("Source not confirmed; verdict is based on the other ingredients.").
 - sources: up to 3 URLs actually used, only from tiers 1-3.
 - manufacturer_confirms: true only if tier 1 explicitly confirms the status for this product.
 - confidence: 0.0-1.0. Use <=0.4 when unverified.`;
