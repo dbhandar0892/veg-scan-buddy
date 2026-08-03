@@ -7,9 +7,9 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
   head: () => ({
     meta: [
-      { title: "Sign in to VegCheck" },
+      { title: "Sign in to VegSeal" },
       { name: "description", content: "Sign in to sync your scans and favorites across devices." },
-      { property: "og:title", content: "Sign in to VegCheck" },
+      { property: "og:title", content: "Sign in to VegSeal" },
       { property: "og:description", content: "Sign in to sync your scans and favorites across devices." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -109,7 +109,7 @@ function AuthPage() {
           <div className="mb-10 text-center">
             <img src="/icon-512.png" alt="" className="mx-auto size-16 rounded-2xl shadow-soft" />
             <h1 className="mt-5 font-display text-[32px] leading-tight tracking-tight text-foreground">
-              Welcome to VegCheck
+              Welcome to VegSeal
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
               Sign in to keep your scans across devices.

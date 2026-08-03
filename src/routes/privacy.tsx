@@ -5,8 +5,8 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy — VegCheck" },
-      { name: "description", content: "VegCheck stores your scans locally on your device." },
+      { title: "Privacy — VegSeal" },
+      { name: "description", content: "VegSeal stores your scans locally on your device." },
     ],
   }),
   component: Page,
@@ -23,7 +23,7 @@ function Page() {
       <div className="px-5 pt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
         <h1 className="font-display text-3xl tracking-tight text-foreground">Privacy</h1>
         <p>
-          VegCheck keeps your scan history and favorites on your device. We do not track
+          VegSeal keeps your scan history and favorites on your device. We do not track
           you and we do not sell your data.
         </p>
         <p>

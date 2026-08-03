@@ -8,7 +8,7 @@ import {
   lookupBarcode,
   ocrIngredients,
   type ProductCandidate,
-} from "@/lib/vegcheck.functions";
+} from "@/lib/vegseal.functions";
 import { pushHistory } from "@/lib/local-store";
 
 export const Route = createFileRoute("/scan")({

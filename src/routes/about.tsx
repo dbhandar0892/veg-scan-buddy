@@ -5,9 +5,9 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About VegCheck" },
-      { name: "description", content: "VegCheck is a trust-first vegan and vegetarian food scanner." },
-      { property: "og:title", content: "About VegCheck" },
+      { title: "About VegSeal" },
+      { name: "description", content: "VegSeal is a trust-first vegan and vegetarian food scanner." },
+      { property: "og:title", content: "About VegSeal" },
       {
         property: "og:description",
         content: "A trust-first food scanner that answers one question: is this vegan or vegetarian?",
@@ -26,9 +26,9 @@ function AboutPage() {
         </Link>
       </div>
       <div className="px-5 pt-4">
-        <h1 className="font-display text-3xl tracking-tight text-foreground">About VegCheck</h1>
+        <h1 className="font-display text-3xl tracking-tight text-foreground">About VegSeal</h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          VegCheck exists to answer one question: <em>can I eat this?</em> Scan a barcode
+          VegSeal exists to answer one question: <em>can I eat this?</em> Scan a barcode
           or ingredient label, and we tell you plainly if a product is vegan,
           vegetarian, or contains animal ingredients.
         </p>

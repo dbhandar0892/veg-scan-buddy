@@ -30,7 +30,7 @@ export default defineConfig({
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "vegcheck-pages",
+              cacheName: "vegseal-pages",
               networkTimeoutSeconds: 4,
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 7 },
             },
@@ -40,7 +40,7 @@ export default defineConfig({
               sameOrigin && /\.(?:js|css|woff2)$/.test(url.pathname),
             handler: "CacheFirst",
             options: {
-              cacheName: "vegcheck-assets",
+              cacheName: "vegseal-assets",
               expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
@@ -49,7 +49,7 @@ export default defineConfig({
               sameOrigin && /\.(?:png|svg|ico|jpg|jpeg|webp)$/.test(url.pathname),
             handler: "CacheFirst",
             options: {
-              cacheName: "vegcheck-images",
+              cacheName: "vegseal-images",
               expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
