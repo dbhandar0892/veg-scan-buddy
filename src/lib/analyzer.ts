@@ -346,15 +346,16 @@ export function analyzeText(
     const ing = matchToken(token, byName, byE);
     if (!ing) {
       if (token.length > 3) {
-        hits.push({
-          token,
-          slug: null,
-          name: token,
-          category: "unknown",
-          vegan: null,
-          vegetarian: null,
-          explanation: "Not in our ingredient database yet.",
-        });
+      hits.push({
+        token,
+        slug: null,
+        name: token,
+        category: "unknown",
+        vegan: null,
+        vegetarian: null,
+        explanation: "Not in our ingredient database yet.",
+        e_number: null,
+      });
       }
       continue;
     }
