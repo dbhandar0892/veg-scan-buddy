@@ -30,6 +30,7 @@ export interface IngredientHit {
   vegan: boolean | null;
   vegetarian: boolean | null;
   explanation: string;
+  e_number: string | null;
   sources?: string[];
 }
 
@@ -197,6 +198,24 @@ function specificSubstanceFrom(detail: string): string | null {
   return null;
 }
 
+const SPECIFIC_DESCRIPTORS: Record<string, string> = {
+  cochineal: "a red color made from insects",
+  carmine: "a red color made from insects",
+  "carminic acid": "a red color made from insects",
+  shellac: "a resin from insects",
+  gelatin: "made from animal collagen",
+  gelatine: "made from animal collagen",
+  isinglass: "from fish bladders",
+  lard: "animal fat",
+  tallow: "animal fat",
+  rennet: "from animal stomachs",
+  beeswax: "from bees",
+  lanolin: "from sheep wool",
+  "l-cysteine": "often from feathers or hair",
+  castoreum: "from beavers",
+  ambergris: "from whales",
+};
+
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
   if (!detail || /^not in our ingredient database/i.test(detail)) return "";
@@ -260,11 +279,13 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       const generic = genericCategoryOf(name);
       if (generic) {
         const specific = specificSubstanceFrom(detail);
-        const lead = specific
-          ? `The ${generic} used is ${specific}`
-          : `The ${generic} used is animal-derived`;
-        const tail = `${capitalize(generic)} can be plant-based, but this one isn't.`;
-        explanation = detail ? `${lead}. ${detail} ${tail}` : `${lead}. ${tail}`;
+        const eNum = culprit.e_number;
+        if (specific) {
+          const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? `an animal-derived ${generic}`;
+          explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
+        } else {
+          explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
+        }
       } else {
         explanation = !detail
           ? `Contains ${name}, an animal-derived ingredient.`
@@ -345,15 +366,16 @@ export function analyzeText(
     const ing = matchToken(token, byName, byE);
     if (!ing) {
       if (token.length > 3) {
-        hits.push({
-          token,
-          slug: null,
-          name: token,
-          category: "unknown",
-          vegan: null,
-          vegetarian: null,
-          explanation: "Not in our ingredient database yet.",
-        });
+      hits.push({
+        token,
+        slug: null,
+        name: token,
+        category: "unknown",
+        vegan: null,
+        vegetarian: null,
+        explanation: "Not in our ingredient database yet.",
+        e_number: null,
+      });
       }
       continue;
     }
@@ -365,6 +387,7 @@ export function analyzeText(
       vegan: ing.vegan,
       vegetarian: ing.vegetarian,
       explanation: ing.explanation,
+      e_number: ing.e_number,
     });
   }
   return deriveStatusFromHits(hits);
