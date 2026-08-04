@@ -367,6 +367,7 @@ export function analyzeText(
       vegan: ing.vegan,
       vegetarian: ing.vegetarian,
       explanation: ing.explanation,
+      e_number: ing.e_number,
     });
   }
   return deriveStatusFromHits(hits);
