@@ -190,6 +190,30 @@ const SPECIFIC_SUBSTANCES = [
   "l-cysteine",
   "castoreum",
   "ambergris",
+  "bone char",
+  "bone phosphate",
+  "lysozyme",
+  "lactose",
+  "whey",
+  "casein",
+  "albumen",
+  "squalene",
+  "cod liver oil",
+  "fish oil",
+  "collagen",
+  "keratin",
+  "pepsin",
+  "civet",
+  "musk",
+  "cuttlefish ink",
+  "squid ink",
+  "chitosan",
+  "propolis",
+  "royal jelly",
+  "silk",
+  "spermaceti",
+  "suet",
+  "elastin",
 ];
 
 function specificSubstanceFrom(detail: string): string | null {
@@ -214,7 +238,32 @@ const SPECIFIC_DESCRIPTORS: Record<string, string> = {
   "l-cysteine": "often from feathers or hair",
   castoreum: "from beavers",
   ambergris: "from whales",
+  "bone char": "a filter made from animal bones",
+  "bone phosphate": "made from animal bones",
+  lysozyme: "an enzyme from egg whites",
+  lactose: "a milk sugar",
+  whey: "from milk",
+  casein: "a milk protein",
+  albumen: "egg white protein",
+  squalene: "often from shark liver oil",
+  "cod liver oil": "from fish",
+  "fish oil": "from fish",
+  collagen: "from animal skin and bones",
+  keratin: "from hooves, horns, or feathers",
+  pepsin: "an enzyme from pig stomachs",
+  civet: "from civet cats",
+  musk: "from animal glands",
+  "cuttlefish ink": "from cuttlefish",
+  "squid ink": "from squid",
+  chitosan: "from shellfish shells",
+  propolis: "from bees",
+  "royal jelly": "from bees",
+  silk: "from silkworms",
+  spermaceti: "from whales",
+  suet: "animal fat",
+  elastin: "from animal connective tissue",
 };
+
 
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
@@ -289,16 +338,27 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         specificSubstanceFrom(name) ??
         specificSubstanceFrom(detail) ??
         specificSubstanceFrom(offenders.map((h) => `${h.name} ${h.explanation}`).join(" "));
+      // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
+      const shortWhy = (d: string) =>
+        d
+          .replace(/^(a |an |the )/i, "")
+          .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/\.$/, "")
+          .toLowerCase();
       if (specific) {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
-      } else if (generic) {
-        explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
+      } else if (!generic) {
+        const why = shortWhy(detail);
+        explanation = why
+          ? `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${why}. Not vegan or vegetarian.`
+          : `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, an animal-derived ingredient. Not vegan or vegetarian.`;
       } else {
-        explanation = !detail
-          ? `Contains ${name}, an animal-derived ingredient.`
-          : `Contains ${name} — ${detail}`;
+        explanation = `The ${generic}${eNum ? ` (${eNum.toUpperCase()})` : ""} used is animal-derived. Not vegan or vegetarian.`;
       }
+
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }

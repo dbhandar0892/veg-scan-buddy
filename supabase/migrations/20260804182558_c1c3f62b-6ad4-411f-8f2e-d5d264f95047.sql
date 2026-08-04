@@ -1,0 +1,1 @@
+DELETE FROM public.products WHERE status = 'not_vegetarian' AND explanation NOT ILIKE '%Not vegan or vegetarian.%';
