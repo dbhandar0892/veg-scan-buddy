@@ -127,8 +127,11 @@ async function analyzeAndLearn(
             // doesn't show a contradictory "company confirms vegetarian" line
             // under a "not vegetarian" verdict.
             finalStatus = "not_vegetarian";
-            finalExplanation = `Contains ${meatLike.name.toLowerCase()}.`;
+            finalExplanation = derived.status === "not_vegetarian"
+              ? derived.explanation
+              : `Contains ${meatLike.name.toLowerCase()}.`;
             verification = "community";
+
           } else if (nonVegan) {
             finalStatus = "vegetarian";
             finalExplanation = `Company confirms vegetarian friendly, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
