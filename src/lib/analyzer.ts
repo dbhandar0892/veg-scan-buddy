@@ -338,16 +338,27 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         specificSubstanceFrom(name) ??
         specificSubstanceFrom(detail) ??
         specificSubstanceFrom(offenders.map((h) => `${h.name} ${h.explanation}`).join(" "));
+      // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
+      const shortWhy = (d: string) =>
+        d
+          .replace(/^(a |an |the )/i, "")
+          .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/\.$/, "")
+          .toLowerCase();
       if (specific) {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
-      } else if (generic) {
-        explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
+      } else if (!generic) {
+        const why = shortWhy(detail);
+        explanation = why
+          ? `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${why}. Not vegan or vegetarian.`
+          : `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, an animal-derived ingredient. Not vegan or vegetarian.`;
       } else {
-        explanation = !detail
-          ? `Contains ${name}, an animal-derived ingredient.`
-          : `Contains ${name} — ${detail}`;
+        explanation = `The ${generic}${eNum ? ` (${eNum.toUpperCase()})` : ""} used is animal-derived. Not vegan or vegetarian.`;
       }
+
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }
