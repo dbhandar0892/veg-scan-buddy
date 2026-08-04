@@ -198,6 +198,24 @@ function specificSubstanceFrom(detail: string): string | null {
   return null;
 }
 
+const SPECIFIC_DESCRIPTORS: Record<string, string> = {
+  cochineal: "a red color made from insects",
+  carmine: "a red color made from insects",
+  "carminic acid": "a red color made from insects",
+  shellac: "a resin from insects",
+  gelatin: "made from animal collagen",
+  gelatine: "made from animal collagen",
+  isinglass: "from fish bladders",
+  lard: "animal fat",
+  tallow: "animal fat",
+  rennet: "from animal stomachs",
+  beeswax: "from bees",
+  lanolin: "from sheep wool",
+  "l-cysteine": "often from feathers or hair",
+  castoreum: "from beavers",
+  ambergris: "from whales",
+};
+
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
   if (!detail || /^not in our ingredient database/i.test(detail)) return "";
