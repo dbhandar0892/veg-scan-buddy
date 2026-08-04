@@ -30,6 +30,7 @@ export interface IngredientHit {
   vegan: boolean | null;
   vegetarian: boolean | null;
   explanation: string;
+  e_number: string | null;
   sources?: string[];
 }
 
