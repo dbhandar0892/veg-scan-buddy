@@ -279,11 +279,13 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       const generic = genericCategoryOf(name);
       if (generic) {
         const specific = specificSubstanceFrom(detail);
-        const lead = specific
-          ? `The ${generic} used is ${specific}`
-          : `The ${generic} used is animal-derived`;
-        const tail = `${capitalize(generic)} can be plant-based, but this one isn't.`;
-        explanation = detail ? `${lead}. ${detail} ${tail}` : `${lead}. ${tail}`;
+        const eNum = culprit.e_number;
+        if (specific) {
+          const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? `an animal-derived ${generic}`;
+          explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
+        } else {
+          explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
+        }
       } else {
         explanation = !detail
           ? `Contains ${name}, an animal-derived ingredient.`
