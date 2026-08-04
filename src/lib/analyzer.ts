@@ -272,20 +272,28 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
   let explanation: string;
   if (hasAnimalNonDairy) {
     status = "not_vegetarian";
-    const culprit = hits.find((h) => h.vegetarian === false);
+    const offenders = hits.filter((h) => h.vegetarian === false);
+    // Prefer a specifically-named offender ("cochineal") over a generic label
+    // ("colour") so the message says what the actual problem ingredient is.
+    const culprit =
+      offenders.find((h) => !genericCategoryOf(h.name)) ?? offenders[0];
     if (culprit) {
       const name = culprit.name.toLowerCase();
       const detail = cleanDetail(culprit.explanation);
       const generic = genericCategoryOf(name);
-      if (generic) {
-        const specific = specificSubstanceFrom(detail);
-        const eNum = culprit.e_number;
-        if (specific) {
-          const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? `an animal-derived ${generic}`;
-          explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
-        } else {
-          explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
-        }
+      const eNum =
+        culprit.e_number ??
+        offenders.find((h) => h.e_number)?.e_number ??
+        null;
+      const specific =
+        specificSubstanceFrom(name) ??
+        specificSubstanceFrom(detail) ??
+        specificSubstanceFrom(offenders.map((h) => `${h.name} ${h.explanation}`).join(" "));
+      if (specific) {
+        const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
+        explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
+      } else if (generic) {
+        explanation = `The ${generic} used is animal-derived. Not vegan or vegetarian.`;
       } else {
         explanation = !detail
           ? `Contains ${name}, an animal-derived ingredient.`
@@ -294,6 +302,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
     } else {
       explanation = "Contains an animal-derived ingredient.";
     }
+
 
   } else if (hasUnknownVegetarian && !hasDairyEggHoney) {
     status = "unknown";
