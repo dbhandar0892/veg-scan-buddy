@@ -217,6 +217,12 @@ function specificSubstanceFrom(detail: string): string | null {
   return null;
 }
 
+export function hasNonVegetarianEvidence(name: string, explanation: string): boolean {
+  const detail = `${name} ${explanation}`.toLowerCase();
+  if (specificSubstanceFrom(detail)) return true;
+  return /\b(?:meat|beef|pork|chicken|turkey|fish|shellfish|animal fat|animal-derived|insect-derived|from insects?|animal rennet)\b/i.test(detail);
+}
+
 const SPECIFIC_DESCRIPTORS: Record<string, string> = {
   cochineal: "a red color made from insects",
   carmine: "a red color made from insects",
