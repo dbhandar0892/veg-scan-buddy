@@ -288,3 +288,91 @@ export async function findIngredientsOnWeb(ctx: {
   if (!ingredients || ingredients.length < 10) return null;
   return { ingredients, sources: (parsed.sources ?? []).slice(0, 3) };
 }
+
+export interface ProductVerdict {
+  status: "vegan" | "vegetarian" | "not_vegetarian" | "unknown";
+  confidence: number;
+  explanation: string;
+  sources: string[];
+  manufacturer_confirms: boolean;
+}
+
+/**
+ * Last-resort, product-level research used only when the ingredient list plus
+ * ingredient-level research still leaves the verdict uncertain. Checks the
+ * manufacturer's own site/FAQ first, then certifications and reputable food
+ * databases, before we are allowed to show "Uncertain".
+ */
+export async function researchProductVerdict(ctx: {
+  brand?: string | null;
+  productName?: string | null;
+  ingredientsText?: string | null;
+  ambiguous?: string[];
+}): Promise<ProductVerdict | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  const product = [ctx.brand, ctx.productName].filter(Boolean).join(" ").trim();
+  if (!product) return null;
+
+  const system = `You determine whether a specific packaged food product is vegan, vegetarian, or neither.
+
+Search in this strict order and stop at the first credible answer:
+1. The manufacturer's official website for THIS product: product page, ingredient/allergen page, FAQ, dietary/suitability statement, or a written customer-service reply.
+2. Official certifications (Vegan Society, Certified Vegan, V-Label, PETA verified brand list) and the brand's official social/press statements.
+3. Reputable food databases (Open Food Facts, EFSA, FDA, Barnivore).
+
+Never use blogs, Reddit, Quora, forums, or content farms as evidence.
+
+Return ONLY JSON: {"status":"vegan"|"vegetarian"|"not_vegetarian"|"unknown","confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}
+- Use "unknown" only if tiers 1-3 give nothing or clearly conflict.
+- explanation: <=25 words, plain English. If ambiguous ingredients (sugar, natural flavors, enzymes, mono- and diglycerides) were resolved, say briefly what the evidence showed.
+- sources: up to 3 URLs actually used, tiers 1-3 only.
+- manufacturer_confirms: true only if tier 1 explicitly states the dietary status.`;
+
+  const user = `Product: ${product}
+${ctx.ingredientsText ? `Ingredients: ${ctx.ingredientsText.slice(0, 1200)}\n` : ""}${ctx.ambiguous?.length ? `Ambiguous ingredients blocking a verdict: ${ctx.ambiguous.join(", ")}\n` : ""}
+Search the manufacturer's site first, then trusted sources, and return the JSON.`;
+
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        plugins: [{ id: "web", max_results: 5 }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error("[product-research] network error:", err);
+    return null;
+  }
+  if (!res.ok) {
+    console.error("[product-research] AI failed", res.status);
+    return null;
+  }
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: Partial<ProductVerdict> = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  if (!parsed.status) return null;
+  return {
+    status: parsed.status,
+    confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
+    explanation: (parsed.explanation ?? "").trim(),
+    sources: (parsed.sources ?? []).slice(0, 3),
+    manufacturer_confirms: Boolean(parsed.manufacturer_confirms),
+  };
+}

@@ -163,11 +163,48 @@ async function analyzeAndLearn(
 
     }
   }
+  // Step 3: never return "Uncertain" without a product-level check of the
+  // manufacturer's own information and reputable sources.
+  if (result.status === "unknown") {
+    const ambiguous = result.hits
+      .filter((h) => h.vegan === null || h.vegetarian === null)
+      .slice(0, 8)
+      .map((h) => h.name);
+    const { researchProductVerdict } = await import("./learn.server");
+    const verdict = await researchProductVerdict({
+      brand: ctx.brand ?? null,
+      productName: ctx.productName ?? null,
+      ingredientsText: text,
+      ambiguous,
+    });
+    if (verdict && verdict.status !== "unknown") {
+      const cited = verdict.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      const note = ambiguous.length
+        ? ` ${ambiguous[0]} was unclear on the label; ${
+            verdict.manufacturer_confirms ? "the manufacturer" : "trusted sources"
+          } confirmed it${cited.length ? ` (${cited.join(", ")})` : ""}.`
+        : cited.length
+          ? ` Confirmed by ${cited.join(", ")}.`
+          : "";
+      result = {
+        ...result,
+        status: verdict.status,
+        explanation: `${verdict.explanation}${note}`.trim(),
+        confidence: Math.max(result.confidence, verdict.confidence || 0.75),
+        verification: verdict.manufacturer_confirms ? "manufacturer" : "community",
+      };
+      if (result.status === "not_vegetarian" && result.verification === "manufacturer") {
+        result = { ...result, verification: "community" };
+      }
+    }
+  }
+
   if (!result.verification) {
     result = { ...result, verification: "unverified" };
   }
   return result;
 }
+
 
 export interface AnalyzedProduct {
   id: string;
