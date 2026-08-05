@@ -351,7 +351,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         specificSubstanceFrom(offenders.map((h) => `${h.name} ${h.explanation}`).join(" "));
       // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
       const shortWhy = (d: string) =>
-        d
+        safeWhy(d)
           .replace(/^(a |an |the )/i, "")
           .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
           .replace(/\s+/g, " ")
