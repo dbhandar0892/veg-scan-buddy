@@ -261,6 +261,27 @@ function cleanDetail(raw: string | undefined): string {
   return detail.replace(/\s+/g, " ").replace(/\.?$/, ".");
 }
 
+// A "why" blurb is only safe to show next to a "Not vegan or vegetarian"
+// verdict if it doesn't contradict it, cite sources, or read like research
+// notes. Anything else gets dropped in favour of a neutral phrase.
+function safeWhy(detail: string): string {
+  if (!detail) return "";
+  const d = detail
+    // drop citation sentences entirely
+    .replace(/\bconfirmed by[^.]*\.?/gi, "")
+    .replace(/\bsources?:[^.]*\.?/gi, "")
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, "")
+    .replace(/\b[a-z0-9-]+\.(?:com|org|net|co|io|gov|edu)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!d) return "";
+  // Contradictory or malformed research text
+  if (/\bis\s+(?:\/)?vegetarian\b|\bis\s+vegan\b|\bplant[-\s]?based\b|\bmaking it\b|\/vegetarian|\/vegan/i.test(d)) return "";
+  if (/\bingredients? list\b|\bstates\b|\baccording to\b|\bcontains wheat\b/i.test(d)) return "";
+  return d;
+}
+
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
