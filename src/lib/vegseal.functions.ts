@@ -76,6 +76,9 @@ async function analyzeAndLearn(
       const { researchUncertain } = await import("./learn.server");
       const verdicts = await researchUncertain(uncertain, ctx);
       if (verdicts.length > 0) {
+        const uncertainKeys = new Set(
+          uncertain.map(({ token, name }) => `${token.trim().toLowerCase()}|${name.trim().toLowerCase()}`),
+        );
         // The AI sometimes echoes the raw token, sometimes the display name.
         // Index by both, plus a loose contains-match as a last resort.
         const byKey = new Map<string, (typeof verdicts)[number]>();
@@ -93,6 +96,10 @@ async function analyzeAndLearn(
           );
         };
         const patched = result.hits.map((h) => {
+          const hitKey = `${h.token.trim().toLowerCase()}|${h.name.trim().toLowerCase()}`;
+          // Never let research for an ambiguous ingredient overwrite a
+          // separate ingredient that the verified database already resolved.
+          if (!uncertainKeys.has(hitKey)) return h;
           const v = findVerdict(h);
           if (!v) return h;
           // Research must name credible animal-derived evidence before it can
