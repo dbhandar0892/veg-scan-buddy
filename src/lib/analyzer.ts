@@ -284,13 +284,25 @@ function safeWhy(detail: string): string {
   // Contradictory or malformed research text
   if (/\bis\s+(?:\/)?vegetarian\b|\bis\s+vegan\b|\bplant[-\s]?based\b|\bmaking it\b|\/vegetarian|\/vegan/i.test(d)) return "";
   if (/\bingredients? list\b|\bstates\b|\baccording to\b|\bcontains wheat\b/i.test(d)) return "";
-  return d;
+  return tidy(d);
 }
 
+// Removes punctuation debris left behind after stripping citations
+// (", .", " ,", doubled periods, trailing commas) so sentences read cleanly.
+function tidy(s: string): string {
+  return s
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;])/g, "$1")
+    .replace(/([,.;])(\s*[,.;])+/g, "$1")
+    .replace(/[,;\s]+$/g, "")
+    .replace(/^[,;.\s]+/g, "")
+    .trim();
+}
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
 
 export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
 
