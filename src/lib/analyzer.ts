@@ -369,24 +369,33 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         specificSubstanceFrom(offenders.map((h) => `${h.name} ${h.explanation}`).join(" "));
       // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
       const shortWhy = (d: string) =>
-        safeWhy(d)
-          .replace(/^(a |an |the )/i, "")
-          .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
-          .replace(/\s+/g, " ")
-          .trim()
-          .replace(/\.$/, "")
-          .toLowerCase();
+        tidy(
+          safeWhy(d)
+            .replace(/^(a |an |the )/i, "")
+            .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
+            .replace(/\.$/, "")
+            .toLowerCase(),
+        );
       if (specific) {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
       } else if (!generic) {
         const why = shortWhy(detail);
-        explanation = why
-          ? `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${why}. Not vegan or vegetarian.`
-          : `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, an animal-derived ingredient. Not vegan or vegetarian.`;
+        // If the "why" already reads as its own "contains …" sentence, don't
+        // nest it after another "Contains X," — that produced the duplicated
+        // "Contains seasoning, contains dairy …" phrasing.
+        if (why && /^contains\b/i.test(why)) {
+          explanation = `${capitalize(why)}. Not vegan or vegetarian.`;
+        } else {
+          explanation = why
+            ? `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${why}. Not vegan or vegetarian.`
+            : `Contains ${name}${eNum ? ` (${eNum.toUpperCase()})` : ""}, an animal-derived ingredient. Not vegan or vegetarian.`;
+        }
       } else {
         explanation = `The ${generic}${eNum ? ` (${eNum.toUpperCase()})` : ""} used is animal-derived. Not vegan or vegetarian.`;
       }
+      explanation = tidy(explanation).replace(/\.?$/, ".");
+
 
     } else {
       explanation = "Contains an animal-derived ingredient.";
