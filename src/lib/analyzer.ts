@@ -509,3 +509,69 @@ export const STATUS_META: Record<
   not_vegetarian: { label: "Not Vegetarian", emoji: "🔴", tone: "danger" },
   unknown: { label: "Unable to Confirm", emoji: "🟡", tone: "warn" },
 };
+
+// ---------------------------------------------------------------------------
+// Cheese & rennet verification
+// Dairy cheese may be made with animal rennet, which is NOT vegetarian. Absence
+// of the word "rennet" on a label proves nothing, so any dairy-cheese product
+// without an explicit vegetarian/vegan/microbial-rennet claim must be verified
+// before we call it vegetarian.
+// ---------------------------------------------------------------------------
+
+const CHEESE_TERMS = [
+  "cheddar cheese",
+  "blue cheese",
+  "cheese powder",
+  "cheese blend",
+  "cheese seasoning",
+  "cheese sauce",
+  "cheese solids",
+  "cheese culture",
+  "parmesan",
+  "romano",
+  "asiago",
+  "gruyere",
+  "gruyère",
+  "gouda",
+  "swiss cheese",
+  "mozzarella",
+  "provolone",
+  "feta",
+  "halloumi",
+  "manchego",
+  "pecorino",
+  "ricotta",
+  "mascarpone",
+  "brie",
+  "camembert",
+  "monterey jack",
+  "colby",
+  "cheese",
+];
+
+// Claims on-pack that make rennet verification unnecessary.
+const VEG_CLAIM =
+  /\b(suitable for vegetarians?|vegetarian cheese|vegetarian[-\s]?friendly|certified vegetarian|microbial rennet|non[-\s]?animal rennet|vegetable rennet|vegetarian rennet|fermentation[-\s]?produced chymosin|\bfpc\b|plant[-\s]?based|vegan|dairy[-\s]?free)\b/i;
+
+const ANIMAL_RENNET = /\b(animal rennet|calf rennet|veal rennet|traditional rennet|rennet \(animal\))\b/i;
+
+export interface CheeseAmbiguity {
+  term: string;
+  hasEnzymes: boolean;
+}
+
+/**
+ * Returns the cheese-related term that needs rennet verification, or null when
+ * the label already resolves the question (explicit vegetarian/vegan claim,
+ * explicit rennet type, or no dairy cheese at all).
+ */
+export function detectCheeseAmbiguity(ingredientsText: string): CheeseAmbiguity | null {
+  const text = (ingredientsText || "").toLowerCase();
+  if (!text) return null;
+  if (VEG_CLAIM.test(text)) return null;
+  if (ANIMAL_RENNET.test(text)) return null;
+  // "vegan cheese" / "plant-based cheese" handled by VEG_CLAIM above.
+  const term = CHEESE_TERMS.find((t) => text.includes(t));
+  if (!term) return null;
+  return { term, hasEnzymes: /\benzymes?\b/.test(text) };
+}
