@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
   deriveStatusFromHits,
+  detectCheeseAmbiguity,
   hasNonVegetarianEvidence,
   type AnalysisResult,
   type KnownIngredient,
@@ -216,11 +217,60 @@ async function analyzeAndLearn(
     }
   }
 
+  // Step 4: Cheese & rennet gate. Dairy cheese is only vegetarian if the
+  // rennet is microbial/FPC. Absence of "animal rennet" on the label is not
+  // evidence, so verify before allowing a vegetarian verdict.
+  if (result.status === "vegetarian" || result.status === "vegan") {
+    const cheese = detectCheeseAmbiguity(text);
+    const alreadyConfirmed =
+      result.verification === "manufacturer" ||
+      (result.verification === "community" && result.status === "vegan");
+    if (cheese && !alreadyConfirmed) {
+      const { researchRennet } = await import("./learn.server");
+      const rv = await researchRennet({
+        brand: ctx.brand ?? null,
+        productName: ctx.productName ?? null,
+        cheeseTerm: cheese.term,
+        ingredientsText: text,
+      });
+      const cited = (rv?.sources ?? []).map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      if (rv?.rennet === "animal") {
+        result = {
+          ...result,
+          status: "not_vegetarian",
+          explanation: `Contains ${cheese.term} made with animal rennet. Not vegetarian.${
+            cited.length ? ` Confirmed by ${cited.join(", ")}.` : ""
+          }`,
+          confidence: Math.max(result.confidence, 0.85),
+          verification: "community",
+        };
+      } else if (rv?.rennet === "vegetarian") {
+        result = {
+          ...result,
+          explanation: `${result.explanation} The ${cheese.term} is made with vegetarian (non-animal) rennet${
+            cited.length ? `, confirmed by ${cited.join(", ")}` : ""
+          }.`,
+          verification: rv.manufacturer_confirms ? "manufacturer" : "community",
+          confidence: Math.max(result.confidence, 0.85),
+        };
+      } else {
+        result = {
+          ...result,
+          status: "unknown",
+          explanation: `This product contains cheese, but the manufacturer does not specify whether the cheese is made using vegetarian or animal rennet.`,
+          confidence: Math.min(result.confidence, 0.5),
+          verification: "unverified",
+        };
+      }
+    }
+  }
+
   if (!result.verification) {
     result = { ...result, verification: "unverified" };
   }
   return result;
 }
+
 
 
 export interface AnalyzedProduct {

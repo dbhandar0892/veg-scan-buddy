@@ -376,3 +376,91 @@ Search the manufacturer's site first, then trusted sources, and return the JSON.
     manufacturer_confirms: Boolean(parsed.manufacturer_confirms),
   };
 }
+
+export interface RennetVerdict {
+  rennet: "vegetarian" | "animal" | "unknown";
+  explanation: string;
+  sources: string[];
+  manufacturer_confirms: boolean;
+}
+
+/**
+ * Dedicated research pass for dairy-cheese products whose label does not say
+ * whether the cheese uses animal or microbial rennet. Manufacturer site first,
+ * then reputable sources. Never guesses: returns "unknown" when unproven.
+ */
+export async function researchRennet(ctx: {
+  brand?: string | null;
+  productName?: string | null;
+  cheeseTerm: string;
+  ingredientsText?: string | null;
+}): Promise<RennetVerdict | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  const product = [ctx.brand, ctx.productName].filter(Boolean).join(" ").trim();
+  if (!product) return null;
+
+  const system = `You verify whether the cheese in a specific packaged food product is made with vegetarian (microbial / fermentation-produced chymosin / non-animal) rennet or animal rennet.
+
+Search in this strict order and stop at the first credible answer:
+1. The manufacturer's official website for THIS product: product page, ingredient/allergen page, FAQ, dietary/suitability statement, or a written customer-service reply.
+2. Official certifications (Vegetarian Society, V-Label, Certified Vegan) and the brand's official statements.
+3. Reputable food databases and cheese producers' official pages (Open Food Facts, PDO/DOP rules — e.g. Parmigiano Reggiano, Grana Padano, Pecorino Romano and Gruyère AOP require animal rennet by law).
+
+Never use blogs, Reddit, Quora, forums, or content farms as evidence. Never guess.
+
+Return ONLY JSON: {"rennet":"vegetarian"|"animal"|"unknown","explanation":string,"sources":string[],"manufacturer_confirms":boolean}
+- "vegetarian" only if evidence explicitly confirms microbial rennet, FPC, non-animal/vegetable rennet, or a vegetarian-suitable claim for this product.
+- "animal" only if evidence explicitly confirms animal/calf rennet.
+- "unknown" whenever evidence is missing, vague, or conflicting.
+- explanation: <=22 words, plain English, no citations inside the text.
+- sources: up to 3 URLs actually used.
+- manufacturer_confirms: true only if tier 1 explicitly states it.`;
+
+  const user = `Product: ${product}
+Cheese-related ingredient needing verification: ${ctx.cheeseTerm}
+${ctx.ingredientsText ? `Ingredients: ${ctx.ingredientsText.slice(0, 1200)}\n` : ""}
+Determine the rennet type and return the JSON.`;
+
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        plugins: [{ id: "web", max_results: 5 }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error("[rennet-research] network error:", err);
+    return null;
+  }
+  if (!res.ok) {
+    console.error("[rennet-research] AI failed", res.status);
+    return null;
+  }
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: Partial<RennetVerdict> = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  const rennet = parsed.rennet === "vegetarian" || parsed.rennet === "animal" ? parsed.rennet : "unknown";
+  return {
+    rennet,
+    explanation: (parsed.explanation ?? "").trim(),
+    sources: (parsed.sources ?? []).slice(0, 3),
+    manufacturer_confirms: Boolean(parsed.manufacturer_confirms),
+  };
+}
