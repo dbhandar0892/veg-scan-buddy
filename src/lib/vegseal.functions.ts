@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
   deriveStatusFromHits,
+  detectCheeseAmbiguity,
   hasNonVegetarianEvidence,
   type AnalysisResult,
   type KnownIngredient,
