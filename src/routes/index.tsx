@@ -28,7 +28,9 @@ function HomePage() {
           Know Before You Buy
         </h1>
         <p className="mt-2 text-sm italic text-muted-foreground">
-          Find out if a product is vegan or vegetarian in seconds. Backed by ingredient analysis and manufacturer research.
+          Find out if a product is vegan or vegetarian in seconds.
+          <br />
+          Backed by ingredient analysis and manufacturer research.
         </p>
       </div>
 
