@@ -365,55 +365,124 @@ export const lookupBarcode = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ barcode: z.string().min(4).max(32) }).parse(input))
   .handler(async ({ data }): Promise<AnalyzedProduct | null> => {
     const supabase = serverSupabase();
-    // Check cache first
     const client = supabase as unknown as ReturnType<typeof createClient>;
+
+    // Barcode variants: scanners report UPC-A (12) while databases often store
+    // EAN-13 (leading zero) and vice versa.
+    const raw = data.barcode.replace(/\D/g, "");
+    const variants = Array.from(
+      new Set(
+        [raw, raw.replace(/^0+/, ""), raw.length === 12 ? `0${raw}` : "", raw.length === 13 && raw.startsWith("0") ? raw.slice(1) : ""].filter(
+          (c) => c.length >= 6,
+        ),
+      ),
+    );
+
+    // Check cache first (any variant)
     const cached = await client
       .from("products")
       .select("*")
-      .eq("barcode", data.barcode)
+      .in("barcode", variants)
+      .limit(1)
       .maybeSingle();
     if (cached.data) {
       return refreshIfUncertain(cached.data as unknown as AnalyzedProduct);
     }
 
-
-    const res = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(data.barcode)}.json?fields=product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text`,
-      { headers: { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" } },
-    );
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      status?: number;
-      product?: {
-        product_name?: string;
-        brands?: string;
-        image_front_url?: string;
-        image_url?: string;
-        categories?: string;
-        ingredients_text_en?: string;
-        ingredients_text?: string;
-      };
+    const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
+    const fields = "product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text";
+    type OffProduct = {
+      product_name?: string;
+      brands?: string;
+      image_front_url?: string;
+      image_url?: string;
+      categories?: string;
+      ingredients_text_en?: string;
+      ingredients_text?: string;
     };
-    if (json.status !== 1 || !json.product) return null;
-    const p = json.product;
-    const ingredientsText = (p.ingredients_text_en || p.ingredients_text || "").trim();
-    if (!ingredientsText) return null;
 
-    const analysis = await analyzeAndLearn(ingredientsText, {
-      brand: p.brands ?? null,
-      productName: p.product_name ?? null,
+    let p: OffProduct | null = null;
+    for (const code of variants) {
+      const res = await fetchWithTimeout(
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`,
+        { headers },
+        5000,
+      );
+      if (!res?.ok) continue;
+      try {
+        const json = (await res.json()) as { status?: number; product?: OffProduct };
+        if (json.status === 1 && json.product) {
+          p = json.product;
+          break;
+        }
+      } catch {
+        // try next variant
+      }
+    }
+
+    const offIngredients = p ? (p.ingredients_text_en || p.ingredients_text || "").trim() : "";
+
+    // Found in Open Food Facts with a usable ingredient list.
+    if (p && offIngredients) {
+      const analysis = await analyzeAndLearn(offIngredients, {
+        brand: p.brands ?? null,
+        productName: p.product_name ?? null,
+      });
+      return upsertProduct(supabase, {
+        barcode: data.barcode,
+        name: p.product_name || "Unknown Product",
+        brand: p.brands ?? null,
+        image_url: p.image_front_url ?? p.image_url ?? null,
+        category: p.categories ?? null,
+        ingredients_text: offIngredients,
+        analysis,
+        source: "openfoodfacts",
+      });
+    }
+
+    // Not in Open Food Facts, or listed without ingredients: research the web.
+    const { findIngredientsOnWeb, findProductByBarcodeOnWeb } = await import("./learn.server");
+
+    if (p && (p.product_name || p.brands)) {
+      const found = await findIngredientsOnWeb({
+        brand: p.brands ?? null,
+        productName: p.product_name ?? null,
+      });
+      if (found) {
+        const analysis = await analyzeAndLearn(found.ingredients, {
+          brand: p.brands ?? null,
+          productName: p.product_name ?? null,
+        });
+        return upsertProduct(supabase, {
+          barcode: data.barcode,
+          name: p.product_name || "Unknown Product",
+          brand: p.brands ?? null,
+          image_url: p.image_front_url ?? p.image_url ?? null,
+          category: p.categories ?? null,
+          ingredients_text: found.ingredients,
+          analysis,
+          source: "web",
+        });
+      }
+      return null;
+    }
+
+    const viaWeb = await findProductByBarcodeOnWeb(raw);
+    if (!viaWeb) return null;
+    const analysis = await analyzeAndLearn(viaWeb.ingredients, {
+      brand: viaWeb.brand,
+      productName: viaWeb.name,
     });
     return upsertProduct(supabase, {
       barcode: data.barcode,
-      name: p.product_name || "Unknown Product",
-      brand: p.brands ?? null,
-      image_url: p.image_front_url ?? p.image_url ?? null,
-      category: p.categories ?? null,
-      ingredients_text: ingredientsText,
+      name: viaWeb.name || "Scanned Product",
+      brand: viaWeb.brand,
+      ingredients_text: viaWeb.ingredients,
       analysis,
-      source: "openfoodfacts",
+      source: "web",
     });
   });
+
 
 // -------- Analyze free-text ingredients (from OCR or paste) --------
 export const analyzeIngredients = createServerFn({ method: "POST" })
