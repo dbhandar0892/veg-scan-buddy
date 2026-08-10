@@ -464,3 +464,64 @@ Determine the rennet type and return the JSON.`;
     manufacturer_confirms: Boolean(parsed.manufacturer_confirms),
   };
 }
+
+/**
+ * Barcode not in Open Food Facts? Use web search to identify the product from
+ * its UPC/EAN and pull its ingredient list from the manufacturer or a major
+ * retailer. Returns null when nothing credible is found.
+ */
+export async function findProductByBarcodeOnWeb(barcode: string): Promise<{
+  name: string | null;
+  brand: string | null;
+  ingredients: string;
+  sources: string[];
+} | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  if (!/^\d{6,14}$/.test(barcode)) return null;
+
+  const system = `You identify packaged food products from a UPC/EAN barcode using web search. Search the barcode number on the manufacturer's site and major retailers (Walmart, Target, Amazon, Kroger, Tesco), plus barcode databases (UPCitemdb, Barcode Lookup, Open Food Facts). Return ONLY JSON: {"name":string|null,"brand":string|null,"ingredients":string|null,"sources":string[]}. "ingredients" = the full ingredient list copied verbatim as a comma-separated string, no nutrition facts or marketing text. Return null fields you cannot verify. Never invent ingredients.`;
+
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        plugins: [{ id: "web", max_results: 5 }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: `Barcode: ${barcode}\nIdentify this product and return its ingredient list.` },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error("[barcode-web] network error:", err);
+    return null;
+  }
+  if (!res.ok) {
+    console.error("[barcode-web] AI failed", res.status);
+    return null;
+  }
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: { name?: string | null; brand?: string | null; ingredients?: string | null; sources?: string[] } = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  const ingredients = (parsed.ingredients ?? "").trim();
+  if (!ingredients || ingredients.length < 10) return null;
+  return {
+    name: (parsed.name ?? "").trim() || null,
+    brand: (parsed.brand ?? "").trim() || null,
+    ingredients,
+    sources: (parsed.sources ?? []).slice(0, 3),
+  };
+}
