@@ -846,6 +846,7 @@ export const searchProducts = createServerFn({ method: "POST" })
       image_url: string | null;
     }> = [];
     for (const p of collected) {
+      if (!p.code || !p.product_name) continue;
       const brand = Array.isArray(p.brands)
         ? p.brands.filter(Boolean).join(", ") || null
         : (p.brands ?? null);
