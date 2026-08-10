@@ -765,26 +765,15 @@ export const searchProducts = createServerFn({ method: "POST" })
       confidence: number;
     }>;
 
-    // Query Open Food Facts. Prefer the modern search-a-licious endpoint
-    // (much better full-text ranking), and fall back to the legacy v2 and
-    // CGI search endpoints. Merge and dedupe by barcode.
+    // Query Open Food Facts. Use the modern search-a-licious endpoint first
+    // with a short timeout; only fall back to the legacy endpoints if we still
+    // need more results. Every fetch is capped so one slow endpoint can't stall
+    // the whole search.
     const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
     const fields = "code,product_name,brands,image_front_small_url,image_small_url";
     const encoded = encodeURIComponent(q);
-    const [salRes, v2Res, cgiRes] = await Promise.all([
-      fetch(
-        `https://search.openfoodfacts.org/search?q=${encoded}&page_size=20&fields=${fields}`,
-        { headers },
-      ).catch(() => null),
-      fetch(
-        `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=20&fields=${fields}`,
-        { headers },
-      ).catch(() => null),
-      fetch(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encoded}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`,
-        { headers },
-      ).catch(() => null),
-    ]);
+    const pageSize = 12;
+    const wantRemote = 12;
 
     type OffProduct = {
       code?: string;
@@ -793,25 +782,63 @@ export const searchProducts = createServerFn({ method: "POST" })
       image_front_small_url?: string;
       image_small_url?: string;
     };
+
     const collected: OffProduct[] = [];
+    const seen = new Set<string>();
+    const addProducts = (products: OffProduct[]) => {
+      for (const p of products) {
+        if (!p.code || !p.product_name) continue;
+        const barcode = p.code.replace(/^0+/, "") || p.code;
+        if (seen.has(barcode)) continue;
+        seen.add(barcode);
+        collected.push(p);
+        if (collected.length >= wantRemote) return true;
+      }
+      return false;
+    };
+
+    // Fast path: search-a-licious is usually the quickest and best ranked.
+    const salRes = await fetchWithTimeout(
+      `https://search.openfoodfacts.org/search?q=${encoded}&page_size=${pageSize}&fields=${fields}`,
+      { headers },
+      4500,
+    );
     if (salRes && salRes.ok) {
       try {
         const j = (await salRes.json()) as { hits?: OffProduct[] };
-        if (j.hits) collected.push(...j.hits);
+        addProducts(j.hits ?? []);
       } catch {
         // ignore
       }
     }
-    for (const res of [v2Res, cgiRes]) {
-      if (!res || !res.ok) continue;
-      try {
-        const j = (await res.json()) as { products?: OffProduct[] };
-        if (j.products) collected.push(...j.products);
-      } catch {
-        // ignore malformed responses
+
+    // Only hit the slower legacy endpoints if the modern one didn't give us
+    // enough useful matches.
+    if (collected.length < wantRemote) {
+      const [v2Res, cgiRes] = await Promise.all([
+        fetchWithTimeout(
+          `https://world.openfoodfacts.org/api/v2/search?search_terms=${encoded}&page_size=${pageSize}&fields=${fields}`,
+          { headers },
+          4500,
+        ),
+        fetchWithTimeout(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encoded}&search_simple=1&action=process&json=1&page_size=${pageSize}&fields=${fields}`,
+          { headers },
+          4500,
+        ),
+      ]);
+      for (const res of [v2Res, cgiRes]) {
+        if (collected.length >= wantRemote) break;
+        if (!res || !res.ok) continue;
+        try {
+          const j = (await res.json()) as { products?: OffProduct[] };
+          if (addProducts(j.products ?? [])) break;
+        } catch {
+          // ignore malformed responses
+        }
       }
     }
-    const seen = new Set<string>();
+
     const offResults: Array<{
       barcode: string;
       name: string;
@@ -819,22 +846,16 @@ export const searchProducts = createServerFn({ method: "POST" })
       image_url: string | null;
     }> = [];
     for (const p of collected) {
-      if (!p.code || !p.product_name) continue;
-      // search-a-licious returns barcodes zero-padded to 13 digits. Strip
-      // leading zeros so barcode lookups match the OFF product API.
-      const barcode = p.code.replace(/^0+/, "") || p.code;
-      if (seen.has(barcode)) continue;
-      seen.add(barcode);
       const brand = Array.isArray(p.brands)
         ? p.brands.filter(Boolean).join(", ") || null
         : (p.brands ?? null);
       offResults.push({
-        barcode,
+        barcode: p.code.replace(/^0+/, "") || p.code,
         name: p.product_name,
         brand,
         image_url: p.image_front_small_url ?? p.image_small_url ?? null,
       });
-      if (offResults.length >= 20) break;
+      if (offResults.length >= wantRemote) break;
     }
     return { local: localResults, remote: offResults };
   });
