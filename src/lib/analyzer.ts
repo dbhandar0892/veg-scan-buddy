@@ -564,14 +564,32 @@ export interface CheeseAmbiguity {
  * Returns the cheese-related term that needs rennet verification, or null when
  * the label already resolves the question (explicit vegetarian/vegan claim,
  * explicit rennet type, or no dairy cheese at all).
+ *
+ * Also catches cheese products whose ingredient list never says "cheese"
+ * (e.g. Parmesan sold as "milk, salt, enzymes") by checking the product name
+ * and the milk + enzymes combination.
  */
-export function detectCheeseAmbiguity(ingredientsText: string): CheeseAmbiguity | null {
+export function detectCheeseAmbiguity(
+  ingredientsText: string,
+  productName?: string | null,
+): CheeseAmbiguity | null {
   const text = (ingredientsText || "").toLowerCase();
-  if (!text) return null;
-  if (VEG_CLAIM.test(text)) return null;
-  if (ANIMAL_RENNET.test(text)) return null;
+  const name = (productName || "").toLowerCase();
+  const all = `${name} ${text}`.trim();
+  if (!all) return null;
+  if (VEG_CLAIM.test(all)) return null;
+  if (ANIMAL_RENNET.test(all)) return null;
+
+  const hasEnzymes = /\benzymes?\b/.test(text);
   // "vegan cheese" / "plant-based cheese" handled by VEG_CLAIM above.
-  const term = CHEESE_TERMS.find((t) => text.includes(t));
-  if (!term) return null;
-  return { term, hasEnzymes: /\benzymes?\b/.test(text) };
+  const term =
+    CHEESE_TERMS.find((t) => text.includes(t)) ?? CHEESE_TERMS.find((t) => name.includes(t));
+  if (term) return { term, hasEnzymes };
+
+  // Cheese made from "milk, cultures, salt, enzymes" without the word cheese.
+  if (hasEnzymes && /\b(milk|cream|cultured milk|milkfat)\b/.test(text)) {
+    return { term: "cheese", hasEnzymes: true };
+  }
+  return null;
 }
+
