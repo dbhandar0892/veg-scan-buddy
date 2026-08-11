@@ -123,23 +123,90 @@ function ScanPage() {
     }
   };
 
+  const resetProgress = () => {
+    if (slowTimer.current) clearTimeout(slowTimer.current);
+    slowTimer.current = null;
+    setSlow(false);
+    setSteps(null);
+    setProgressNote(null);
+    setFoundProduct(null);
+  };
+
   const handleBarcode = async (code: string) => {
+    lastBarcode.current = code;
     setStatus("looking-up");
+    setError(null);
+    setCandidates(null);
+    setFoundProduct(null);
+    setSlow(false);
+    setProgressNote(null);
+    setSteps(buildSteps("product", []));
+    if (slowTimer.current) clearTimeout(slowTimer.current);
+    slowTimer.current = setTimeout(() => setSlow(true), 11000);
+
     try {
+      // Fast pass: identify the product so we can show it right away.
+      const identity = await identify({ data: { barcode: code } });
+
+      if (identity.kind === "cached") {
+        setSteps(buildSteps(null, ["product", "ingredients", "animal", "uncertain", "final"]));
+        setFoundProduct({
+          name: identity.product.name,
+          brand: identity.product.brand,
+          image_url: identity.product.image_url,
+        });
+        resetProgress();
+        done(identity.product);
+        return;
+      }
+
+      if (identity.kind === "found") {
+        setFoundProduct({
+          name: identity.name,
+          brand: identity.brand,
+          image_url: identity.image_url,
+        });
+        setSteps(
+          buildSteps(
+            "ingredients",
+            ["product"],
+            identity.hasIngredients
+              ? {}
+              : { ingredients: "Finding the ingredient list on the web" },
+          ),
+        );
+        setProgressNote(
+          identity.hasIngredients
+            ? "Checking ingredients and verifying the result…"
+            : "No ingredient list on file — checking the manufacturer and reliable sources…",
+        );
+      } else {
+        setSteps(buildSteps("product", [], { product: "Searching product databases" }));
+        setProgressNote("This barcode isn't in the open databases — searching the web for it…");
+      }
+
       const product = await lookup({ data: { barcode: code } });
       if (!product) {
+        if (slowTimer.current) clearTimeout(slowTimer.current);
         setStatus("error");
+        setSteps(null);
         setError(
           `No product found for ${code}. Tap Scan Ingredient List to check the ingredients instead.`,
         );
         return;
       }
+      setSteps(buildSteps(null, ["product", "ingredients", "animal", "uncertain", "final"]));
+      resetProgress();
       done(product);
     } catch (e) {
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+      setSlow(false);
       setStatus("error");
+      setSteps(null);
       setError(e instanceof Error ? e.message : "Something went wrong");
     }
   };
+
 
   const handleImage = async (file: File) => {
     stopCamera();
