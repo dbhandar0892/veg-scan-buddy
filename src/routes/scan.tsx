@@ -328,14 +328,25 @@ function ScanPage() {
 
   useEffect(() => {
     start();
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const retry = () => {
+    resetProgress();
     setError(null);
+    const code = lastBarcode.current;
+    if (code && status === "error") {
+      lastBarcode.current = null;
+      handleBarcode(code);
+      return;
+    }
     start();
   };
+
 
   const busy = status === "looking-up" || status === "analyzing";
 
