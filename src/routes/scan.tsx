@@ -188,6 +188,7 @@ function ScanPage() {
       const product = await lookup({ data: { barcode: code } });
       if (!product) {
         if (slowTimer.current) clearTimeout(slowTimer.current);
+        lastBarcode.current = null;
         setStatus("error");
         setSteps(null);
         setError(
