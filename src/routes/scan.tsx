@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Loader2, X, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ScanProgress, type ProgressStep } from "@/components/ScanProgress";
 import {
   lookupBarcode,
+  identifyBarcode,
   ocrIngredients,
   type ProductCandidate,
 } from "@/lib/vegseal.functions";
@@ -23,6 +25,22 @@ type Status =
   | "analyzing"
   | "error";
 
+const STEP_LABELS: { key: string; label: string }[] = [
+  { key: "product", label: "Checking product" },
+  { key: "ingredients", label: "Analyzing ingredients" },
+  { key: "animal", label: "Checking animal-derived ingredients" },
+  { key: "uncertain", label: "Verifying uncertain ingredients" },
+  { key: "final", label: "Finalizing result" },
+];
+
+function buildSteps(activeKey: string | null, doneKeys: string[], overrides: Record<string, string> = {}): ProgressStep[] {
+  return STEP_LABELS.map((s) => ({
+    key: s.key,
+    label: overrides[s.key] ?? s.label,
+    state: doneKeys.includes(s.key) ? "done" : s.key === activeKey ? "active" : "pending",
+  }));
+}
+
 function ScanPage() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -36,8 +54,21 @@ function ScanPage() {
   const [candidateQuery, setCandidateQuery] = useState<string>("");
   const [analysisMessage, setAnalysisMessage] = useState("Analyzing photo…");
 
+  const [steps, setSteps] = useState<ProgressStep[] | null>(null);
+  const [progressNote, setProgressNote] = useState<string | null>(null);
+  const [foundProduct, setFoundProduct] = useState<{
+    name: string;
+    brand: string | null;
+    image_url: string | null;
+  } | null>(null);
+  const [slow, setSlow] = useState(false);
+  const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastBarcode = useRef<string | null>(null);
+
   const lookup = useServerFn(lookupBarcode);
+  const identify = useServerFn(identifyBarcode);
   const ocr = useServerFn(ocrIngredients);
+
 
   const done = (p: {
     id: string;
@@ -92,23 +123,91 @@ function ScanPage() {
     }
   };
 
+  const resetProgress = () => {
+    if (slowTimer.current) clearTimeout(slowTimer.current);
+    slowTimer.current = null;
+    setSlow(false);
+    setSteps(null);
+    setProgressNote(null);
+    setFoundProduct(null);
+  };
+
   const handleBarcode = async (code: string) => {
+    lastBarcode.current = code;
     setStatus("looking-up");
+    setError(null);
+    setCandidates(null);
+    setFoundProduct(null);
+    setSlow(false);
+    setProgressNote(null);
+    setSteps(buildSteps("product", []));
+    if (slowTimer.current) clearTimeout(slowTimer.current);
+    slowTimer.current = setTimeout(() => setSlow(true), 11000);
+
     try {
+      // Fast pass: identify the product so we can show it right away.
+      const identity = await identify({ data: { barcode: code } });
+
+      if (identity.kind === "cached") {
+        setSteps(buildSteps(null, ["product", "ingredients", "animal", "uncertain", "final"]));
+        setFoundProduct({
+          name: identity.product.name,
+          brand: identity.product.brand,
+          image_url: identity.product.image_url,
+        });
+        resetProgress();
+        done(identity.product);
+        return;
+      }
+
+      if (identity.kind === "found") {
+        setFoundProduct({
+          name: identity.name,
+          brand: identity.brand,
+          image_url: identity.image_url,
+        });
+        setSteps(
+          buildSteps(
+            "ingredients",
+            ["product"],
+            identity.hasIngredients
+              ? {}
+              : { ingredients: "Finding the ingredient list on the web" },
+          ),
+        );
+        setProgressNote(
+          identity.hasIngredients
+            ? "Checking ingredients and verifying the result…"
+            : "No ingredient list on file — checking the manufacturer and reliable sources…",
+        );
+      } else {
+        setSteps(buildSteps("product", [], { product: "Searching product databases" }));
+        setProgressNote("This barcode isn't in the open databases — searching the web for it…");
+      }
+
       const product = await lookup({ data: { barcode: code } });
       if (!product) {
+        if (slowTimer.current) clearTimeout(slowTimer.current);
+        lastBarcode.current = null;
         setStatus("error");
+        setSteps(null);
         setError(
           `No product found for ${code}. Tap Scan Ingredient List to check the ingredients instead.`,
         );
         return;
       }
+      setSteps(buildSteps(null, ["product", "ingredients", "animal", "uncertain", "final"]));
+      resetProgress();
       done(product);
     } catch (e) {
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+      setSlow(false);
       setStatus("error");
+      setSteps(null);
       setError(e instanceof Error ? e.message : "Something went wrong");
     }
   };
+
 
   const handleImage = async (file: File) => {
     stopCamera();
@@ -230,14 +329,25 @@ function ScanPage() {
 
   useEffect(() => {
     start();
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const retry = () => {
+    resetProgress();
     setError(null);
+    const code = lastBarcode.current;
+    if (code && status === "error") {
+      lastBarcode.current = null;
+      handleBarcode(code);
+      return;
+    }
     start();
   };
+
 
   const busy = status === "looking-up" || status === "analyzing";
 
@@ -277,13 +387,25 @@ function ScanPage() {
           ) : null}
 
           {busy ? (
-            <div className="absolute inset-0 grid place-items-center bg-background/85">
-              <div className="flex items-center gap-2 text-sm text-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                {status === "looking-up" ? "Looking it up…" : analysisMessage}
-              </div>
+            <div className="absolute inset-0 grid place-items-center bg-background/92 p-4">
+              {steps ? (
+                <div className="w-full animate-fade-in">
+                  <ScanProgress
+                    steps={steps}
+                    note={progressNote}
+                    product={foundProduct}
+                    slow={slow}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  {analysisMessage}
+                </div>
+              )}
             </div>
           ) : null}
+
 
           {status === "error" ? (
             <div className="absolute inset-0 grid place-items-center bg-background/90 px-6 text-center">
