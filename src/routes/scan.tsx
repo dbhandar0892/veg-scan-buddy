@@ -375,13 +375,25 @@ function ScanPage() {
           ) : null}
 
           {busy ? (
-            <div className="absolute inset-0 grid place-items-center bg-background/85">
-              <div className="flex items-center gap-2 text-sm text-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                {status === "looking-up" ? "Looking it up…" : analysisMessage}
-              </div>
+            <div className="absolute inset-0 grid place-items-center bg-background/92 p-4">
+              {steps ? (
+                <div className="w-full animate-fade-in">
+                  <ScanProgress
+                    steps={steps}
+                    note={progressNote}
+                    product={foundProduct}
+                    slow={slow}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  {analysisMessage}
+                </div>
+              )}
             </div>
           ) : null}
+
 
           {status === "error" ? (
             <div className="absolute inset-0 grid place-items-center bg-background/90 px-6 text-center">
