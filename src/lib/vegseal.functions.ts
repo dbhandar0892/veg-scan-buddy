@@ -239,18 +239,13 @@ async function analyzeAndLearn(
   // rennet is microbial/FPC. Absence of "animal rennet" on the label is not
   // evidence, so verify before allowing a vegetarian verdict.
   if (result.status === "vegetarian" || result.status === "vegan") {
-    const cheese = detectCheeseAmbiguity(text, ctx.productName ?? null);
+    const cheese = cheeseUpfront;
     const alreadyConfirmed =
       result.verification === "manufacturer" ||
       (result.verification === "community" && result.status === "vegan");
     if (cheese && !alreadyConfirmed) {
-      const { researchRennet } = await import("./learn.server");
-      const rv = await researchRennet({
-        brand: ctx.brand ?? null,
-        productName: ctx.productName ?? null,
-        cheeseTerm: cheese.term,
-        ingredientsText: text,
-      });
+      const rv = await rennetPromise;
+
       const cited = (rv?.sources ?? []).map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
       if (rv?.rennet === "animal") {
         result = {
