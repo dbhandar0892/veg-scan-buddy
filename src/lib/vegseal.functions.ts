@@ -20,14 +20,25 @@ function serverSupabase() {
   );
 }
 
+// The verified ingredient table is large and changes rarely; cache it briefly
+// in memory so repeat scans skip the full table download.
+let ingredientCache: { at: number; rows: KnownIngredient[] } | null = null;
+const INGREDIENT_CACHE_MS = 60_000;
+
 async function loadKnownIngredients(): Promise<KnownIngredient[]> {
+  if (ingredientCache && Date.now() - ingredientCache.at < INGREDIENT_CACHE_MS) {
+    return ingredientCache.rows;
+  }
   const supabase = serverSupabase();
   const { data, error } = await supabase
     .from("ingredients")
     .select("slug,name,aliases,category,vegan,vegetarian,explanation,e_number");
   if (error) throw new Error(error.message);
-  return (data ?? []) as KnownIngredient[];
+  const rows = (data ?? []) as KnownIngredient[];
+  ingredientCache = { at: Date.now(), rows };
+  return rows;
 }
+
 
 function domainOf(url: string): string {
   try {
@@ -46,6 +57,24 @@ async function analyzeAndLearn(
   const known = await loadKnownIngredients();
   let result = analyzeText(text, known);
 
+  // Speed: the cheese/rennet check (step 4) only depends on the raw label text
+  // and product context, never on the AI passes below. Kick it off now so it
+  // runs in parallel with the ingredient research instead of after it.
+  const cheeseUpfront = detectCheeseAmbiguity(text, ctx.productName ?? null);
+  const rennetPromise = cheeseUpfront
+    ? import("./learn.server")
+        .then(({ researchRennet }) =>
+          researchRennet({
+            brand: ctx.brand ?? null,
+            productName: ctx.productName ?? null,
+            cheeseTerm: cheeseUpfront.term,
+            ingredientsText: text,
+          }),
+        )
+        .catch(() => null)
+    : null;
+
+
   // Step 1: classify brand-new tokens (adds to global DB).
   const unknownTokens = result.hits
     .filter((h) => h.slug === null && h.category === "unknown")
@@ -53,7 +82,12 @@ async function analyzeAndLearn(
   if (unknownTokens.length > 0) {
     const { learnUnknownIngredients } = await import("./learn.server");
     const learned = await learnUnknownIngredients(unknownTokens);
-    if (learned.length > 0) result = analyzeText(text, [...known, ...learned]);
+    if (learned.length > 0) {
+      result = analyzeText(text, [...known, ...learned]);
+      // Keep the in-memory cache in sync with freshly learned ingredients.
+      ingredientCache = { at: Date.now(), rows: [...known, ...learned] };
+    }
+
   }
 
   // Step 2: if ANY hit is still ambiguous — generic terms like "spices",
@@ -221,18 +255,13 @@ async function analyzeAndLearn(
   // rennet is microbial/FPC. Absence of "animal rennet" on the label is not
   // evidence, so verify before allowing a vegetarian verdict.
   if (result.status === "vegetarian" || result.status === "vegan") {
-    const cheese = detectCheeseAmbiguity(text, ctx.productName ?? null);
+    const cheese = cheeseUpfront;
     const alreadyConfirmed =
       result.verification === "manufacturer" ||
       (result.verification === "community" && result.status === "vegan");
     if (cheese && !alreadyConfirmed) {
-      const { researchRennet } = await import("./learn.server");
-      const rv = await researchRennet({
-        brand: ctx.brand ?? null,
-        productName: ctx.productName ?? null,
-        cheeseTerm: cheese.term,
-        ingredientsText: text,
-      });
+      const rv = await rennetPromise;
+
       const cited = (rv?.sources ?? []).map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
       if (rv?.rennet === "animal") {
         result = {
