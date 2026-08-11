@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Loader2, X, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ScanProgress, type ProgressStep } from "@/components/ScanProgress";
 import {
   lookupBarcode,
+  identifyBarcode,
   ocrIngredients,
   type ProductCandidate,
 } from "@/lib/vegseal.functions";
@@ -23,6 +25,22 @@ type Status =
   | "analyzing"
   | "error";
 
+const STEP_LABELS: { key: string; label: string }[] = [
+  { key: "product", label: "Checking product" },
+  { key: "ingredients", label: "Analyzing ingredients" },
+  { key: "animal", label: "Checking animal-derived ingredients" },
+  { key: "uncertain", label: "Verifying uncertain ingredients" },
+  { key: "final", label: "Finalizing result" },
+];
+
+function buildSteps(activeKey: string | null, doneKeys: string[], overrides: Record<string, string> = {}): ProgressStep[] {
+  return STEP_LABELS.map((s) => ({
+    key: s.key,
+    label: overrides[s.key] ?? s.label,
+    state: doneKeys.includes(s.key) ? "done" : s.key === activeKey ? "active" : "pending",
+  }));
+}
+
 function ScanPage() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -36,8 +54,21 @@ function ScanPage() {
   const [candidateQuery, setCandidateQuery] = useState<string>("");
   const [analysisMessage, setAnalysisMessage] = useState("Analyzing photo…");
 
+  const [steps, setSteps] = useState<ProgressStep[] | null>(null);
+  const [progressNote, setProgressNote] = useState<string | null>(null);
+  const [foundProduct, setFoundProduct] = useState<{
+    name: string;
+    brand: string | null;
+    image_url: string | null;
+  } | null>(null);
+  const [slow, setSlow] = useState(false);
+  const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastBarcode = useRef<string | null>(null);
+
   const lookup = useServerFn(lookupBarcode);
+  const identify = useServerFn(identifyBarcode);
   const ocr = useServerFn(ocrIngredients);
+
 
   const done = (p: {
     id: string;
