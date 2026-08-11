@@ -46,6 +46,24 @@ async function analyzeAndLearn(
   const known = await loadKnownIngredients();
   let result = analyzeText(text, known);
 
+  // Speed: the cheese/rennet check (step 4) only depends on the raw label text
+  // and product context, never on the AI passes below. Kick it off now so it
+  // runs in parallel with the ingredient research instead of after it.
+  const cheeseUpfront = detectCheeseAmbiguity(text, ctx.productName ?? null);
+  const rennetPromise = cheeseUpfront
+    ? import("./learn.server")
+        .then(({ researchRennet }) =>
+          researchRennet({
+            brand: ctx.brand ?? null,
+            productName: ctx.productName ?? null,
+            cheeseTerm: cheeseUpfront.term,
+            ingredientsText: text,
+          }),
+        )
+        .catch(() => null)
+    : null;
+
+
   // Step 1: classify brand-new tokens (adds to global DB).
   const unknownTokens = result.hits
     .filter((h) => h.slug === null && h.category === "unknown")
