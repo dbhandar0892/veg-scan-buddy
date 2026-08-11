@@ -20,14 +20,25 @@ function serverSupabase() {
   );
 }
 
+// The verified ingredient table is large and changes rarely; cache it briefly
+// in memory so repeat scans skip the full table download.
+let ingredientCache: { at: number; rows: KnownIngredient[] } | null = null;
+const INGREDIENT_CACHE_MS = 60_000;
+
 async function loadKnownIngredients(): Promise<KnownIngredient[]> {
+  if (ingredientCache && Date.now() - ingredientCache.at < INGREDIENT_CACHE_MS) {
+    return ingredientCache.rows;
+  }
   const supabase = serverSupabase();
   const { data, error } = await supabase
     .from("ingredients")
     .select("slug,name,aliases,category,vegan,vegetarian,explanation,e_number");
   if (error) throw new Error(error.message);
-  return (data ?? []) as KnownIngredient[];
+  const rows = (data ?? []) as KnownIngredient[];
+  ingredientCache = { at: Date.now(), rows };
+  return rows;
 }
+
 
 function domainOf(url: string): string {
   try {
