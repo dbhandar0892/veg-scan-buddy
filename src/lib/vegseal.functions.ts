@@ -82,7 +82,12 @@ async function analyzeAndLearn(
   if (unknownTokens.length > 0) {
     const { learnUnknownIngredients } = await import("./learn.server");
     const learned = await learnUnknownIngredients(unknownTokens);
-    if (learned.length > 0) result = analyzeText(text, [...known, ...learned]);
+    if (learned.length > 0) {
+      result = analyzeText(text, [...known, ...learned]);
+      // Keep the in-memory cache in sync with freshly learned ingredients.
+      ingredientCache = { at: Date.now(), rows: [...known, ...learned] };
+    }
+
   }
 
   // Step 2: if ANY hit is still ambiguous — generic terms like "spices",
