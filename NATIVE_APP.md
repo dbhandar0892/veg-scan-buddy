@@ -56,3 +56,15 @@ iOS needs `NSCameraUsageDescription` in `Info.plist` for barcode scanning.
 This project builds to a server (SSR) output, not a static folder, so a
 100% local bundle isn't produced by the build. A native client that ships
 its own UI can still work by calling the endpoints above directly.
+
+## iOS/Android packaging (current setup)
+
+`capacitor.config.ts` uses `webDir: "native"` (contains a small offline fallback
+`index.html`) and `server.url: "https://vegseal.com"`, so the native shell loads
+the live hosted app. There is no `dist/` folder to build — the app is
+server-rendered.
+
+```bash
+npx cap sync ios
+npx cap open ios
+```
