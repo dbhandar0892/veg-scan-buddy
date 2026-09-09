@@ -390,9 +390,7 @@ async function refreshIfUncertain(row: AnalyzedProduct): Promise<AnalyzedProduct
 }
 
 // -------- Barcode lookup via Open Food Facts --------
-export const lookupBarcode = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ barcode: z.string().min(4).max(32) }).parse(input))
-  .handler(async ({ data }): Promise<AnalyzedProduct | null> => {
+export async function lookupBarcodeCore(data: { barcode: string }): Promise<AnalyzedProduct | null> {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
 
@@ -510,7 +508,11 @@ export const lookupBarcode = createServerFn({ method: "POST" })
       analysis,
       source: "web",
     });
-  });
+}
+
+export const lookupBarcode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ barcode: z.string().min(4).max(32) }).parse(input))
+  .handler(async ({ data }) => lookupBarcodeCore(data));
 
 // -------- Fast identify pass (no AI, no analysis) --------
 // Used by the scanner so it can show the real product immediately and report
@@ -526,9 +528,7 @@ export type BarcodeIdentity =
     }
   | { kind: "unidentified" };
 
-export const identifyBarcode = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ barcode: z.string().min(4).max(32) }).parse(input))
-  .handler(async ({ data }): Promise<BarcodeIdentity> => {
+export async function identifyBarcodeCore(data: { barcode: string }): Promise<BarcodeIdentity> {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
     const raw = data.barcode.replace(/\D/g, "");
@@ -594,10 +594,25 @@ export const identifyBarcode = createServerFn({ method: "POST" })
       }
     }
     return { kind: "unidentified" };
-  });
+}
+
+export const identifyBarcode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ barcode: z.string().min(4).max(32) }).parse(input))
+  .handler(async ({ data }) => identifyBarcodeCore(data));
 
 
 // -------- Analyze free-text ingredients (from OCR or paste) --------
+export async function analyzeIngredientsCore(data: { text: string; name?: string }): Promise<AnalyzedProduct> {
+    const supabase = serverSupabase();
+    const analysis = await analyzeAndLearn(data.text, { productName: data.name ?? null });
+    return upsertProduct(supabase, {
+      name: data.name || "Scanned Ingredients",
+      ingredients_text: data.text,
+      analysis,
+      source: "ocr",
+    });
+}
+
 export const analyzeIngredients = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
@@ -607,16 +622,7 @@ export const analyzeIngredients = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }): Promise<AnalyzedProduct> => {
-    const supabase = serverSupabase();
-    const analysis = await analyzeAndLearn(data.text, { productName: data.name ?? null });
-    return upsertProduct(supabase, {
-      name: data.name || "Scanned Ingredients",
-      ingredients_text: data.text,
-      analysis,
-      source: "ocr",
-    });
-  });
+  .handler(async ({ data }) => analyzeIngredientsCore(data));
 
 // -------- Analyze a photo: works for either an ingredient label OR a product shot --------
 // The AI first tries to read the ingredient list. If none is visible (e.g. the
@@ -695,16 +701,7 @@ function scoreCandidate(
   return score;
 }
 
-export const ocrIngredients = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    z
-      .object({
-        imageBase64: z.string().min(100),
-        mime: z.string().default("image/jpeg"),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data }): Promise<PhotoAnalysisResult> => {
+export async function ocrIngredientsCore(data: { imageBase64: string; mime: string }): Promise<PhotoAnalysisResult> {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -918,13 +915,22 @@ export const ocrIngredients = createServerFn({ method: "POST" })
     throw new Error(
       "We couldn't recognize the product or read an ingredient list. Try scanning the ingredient list again with better lighting, or enter the barcode manually.",
     );
-  });
+}
+
+export const ocrIngredients = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        imageBase64: z.string().min(100),
+        mime: z.string().default("image/jpeg"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => ocrIngredientsCore(data));
 
 
 // -------- Search products --------
-export const searchProducts = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ query: z.string().min(1).max(120) }).parse(input))
-  .handler(async ({ data }) => {
+export async function searchProductsCore(data: { query: string }) {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
     const q = data.query.trim();
@@ -1041,12 +1047,14 @@ export const searchProducts = createServerFn({ method: "POST" })
       if (offResults.length >= wantRemote) break;
     }
     return { local: localResults, remote: offResults };
-  });
+}
+
+export const searchProducts = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ query: z.string().min(1).max(120) }).parse(input))
+  .handler(async ({ data }) => searchProductsCore(data));
 
 // -------- Fetch a single cached product --------
-export const getProduct = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
-  .handler(async ({ data }): Promise<AnalyzedProduct | null> => {
+export async function getProductCore(data: { id: string }): Promise<AnalyzedProduct | null> {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
     const { data: row, error } = await client
@@ -1057,13 +1065,15 @@ export const getProduct = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!row) return null;
     return refreshIfUncertain(row as unknown as AnalyzedProduct);
-  });
+}
+
+export const getProduct = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => getProductCore(data));
 
 
 // -------- Ingredient detail --------
-export const getIngredient = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
-  .handler(async ({ data }) => {
+export async function getIngredientCore(data: { slug: string }) {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
     const { data: row, error } = await client
@@ -1073,9 +1083,13 @@ export const getIngredient = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row as KnownIngredient | null;
-  });
+}
 
-export const listIngredients = createServerFn({ method: "GET" }).handler(async () => {
+export const getIngredient = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => getIngredientCore(data));
+
+export async function listIngredientsCore() {
   const supabase = serverSupabase();
   const client = supabase as unknown as ReturnType<typeof createClient>;
   const { data, error } = await client
@@ -1090,4 +1104,6 @@ export const listIngredients = createServerFn({ method: "GET" }).handler(async (
     vegan: boolean | null;
     vegetarian: boolean | null;
   }>;
-});
+}
+
+  .handler(async () => listIngredientsCore());
