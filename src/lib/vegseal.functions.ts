@@ -1106,4 +1106,6 @@ export async function listIngredientsCore() {
   }>;
 }
 
-  .handler(async () => listIngredientsCore());
+export const listIngredients = createServerFn({ method: "GET" }).handler(async () =>
+  listIngredientsCore(),
+);
