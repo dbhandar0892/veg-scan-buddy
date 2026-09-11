@@ -36,6 +36,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const navigate = useNavigate();
+  const access = useAccess();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("");
