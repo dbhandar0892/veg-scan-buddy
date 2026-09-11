@@ -1,10 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Mail, Loader2 } from "lucide-react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
+const authSearchSchema = z.object({
+  redirect: z.enum(["/", "/profile", "/scan"]).optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search) => authSearchSchema.parse(search),
   component: AuthPage,
   head: () => ({
     meta: [
@@ -36,6 +42,8 @@ function GoogleGlyph({ className }: { className?: string }) {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
+  const destination = redirect ?? "/profile";
   const [email, setEmail] = useState("");
   const [showEmail, setShowEmail] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,20 +52,20 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/profile", replace: true });
+      if (data.session) navigate({ to: destination, replace: true });
     });
-  }, [navigate]);
+  }, [destination, navigate]);
 
   const oauth = async (provider: "google" | "apple") => {
     setErr(null);
     setBusy(provider);
     try {
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`,
       });
       if (result.error) throw new Error(String(result.error));
       if (result.redirected) return;
-      navigate({ to: "/profile", replace: true });
+      navigate({ to: destination, replace: true });
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Sign-in failed. Please try again.");
       setBusy(null);
@@ -73,7 +81,9 @@ function AuthPage() {
     setBusy("email");
     try {
       const emailRedirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`
+          : undefined;
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo },
@@ -104,12 +114,16 @@ function AuthPage() {
           ) : (
             <div />
           )}
-          <button
-            onClick={skip}
-            className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            Skip
-          </button>
+          {redirect ? (
+            <div />
+          ) : (
+            <button
+              onClick={skip}
+              className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Skip
+            </button>
+          )}
         </header>
 
         <div className="flex flex-1 flex-col justify-center py-8">
@@ -119,7 +133,9 @@ function AuthPage() {
               Welcome to VegSeal
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
-              Sign in to keep your scans across devices.
+              {redirect === "/scan"
+                ? "Create an account to start your 7-day free trial."
+                : "Sign in to keep your scans across devices."}
             </p>
           </div>
 
