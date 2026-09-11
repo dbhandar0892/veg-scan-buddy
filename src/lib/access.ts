@@ -43,8 +43,16 @@ export function useAccess(): AccessState {
     let active = true;
 
     const load = async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user ?? null;
+      // Trust the locally stored session first so a network hiccup never
+      // makes a signed-in user look signed out (and get bounced to /auth).
+      const { data: sessionData } = await supabase.auth.getSession();
+      let user = sessionData.session?.user ?? null;
+      if (user) {
+        // Validate/refresh in the background; keep the session user on failure.
+        const { data: userData, error } = await supabase.auth.getUser();
+        if (!error && userData.user) user = userData.user;
+        else if (error && /invalid|expired/i.test(error.message)) user = null;
+      }
       if (!active) return;
 
       if (!user) {
