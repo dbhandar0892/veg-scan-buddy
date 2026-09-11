@@ -196,11 +196,11 @@ function AuthPage() {
           <div className="mb-10 text-center">
             <img src="/icon-512.png" alt="" className="mx-auto size-16 rounded-2xl shadow-soft" />
             <h1 className="mt-5 font-display text-[32px] leading-tight tracking-tight text-foreground">
-              Welcome to VegSeal
+              {redirect === "/scan" ? "Sign in to scan" : "Welcome to VegSeal"}
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
               {redirect === "/scan"
-                ? "Create an account to start your 7-day free trial."
+                ? "Welcome back. Sign in to continue scanning. New users get a 7-day free trial."
                 : "Sign in to keep your scans across devices."}
             </p>
           </div>
