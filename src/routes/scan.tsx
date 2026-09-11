@@ -12,6 +12,8 @@ import {
   type ProductCandidate,
 } from "@/lib/vegseal.functions";
 import { pushHistory } from "@/lib/local-store";
+import { useAccess } from "@/lib/access";
+import { Paywall, TrialBanner } from "@/components/Paywall";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
@@ -43,6 +45,7 @@ function buildSteps(activeKey: string | null, doneKeys: string[], overrides: Rec
 
 function ScanPage() {
   const navigate = useNavigate();
+  const access = useAccess();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const busyRef = useRef(false);
@@ -328,13 +331,14 @@ function ScanPage() {
 
 
   useEffect(() => {
+    if (!access.hasAccess) return;
     start();
     return () => {
       stopCamera();
       if (slowTimer.current) clearTimeout(slowTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [access.hasAccess]);
 
   const retry = () => {
     resetProgress();
@@ -351,6 +355,19 @@ function ScanPage() {
 
   const busy = status === "looking-up" || status === "analyzing";
 
+  if (!access.loading && !access.hasAccess) {
+    return (
+      <AppShell>
+        <div className="px-5 pt-8">
+          <h1 className="font-display text-3xl tracking-tight text-foreground">
+            Scan
+          </h1>
+        </div>
+        <Paywall signedIn={Boolean(access.user)} />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="px-5 pt-8">
@@ -358,6 +375,11 @@ function ScanPage() {
           Scan
         </h1>
       </div>
+
+      {!access.isSubscribed && access.daysLeft > 0 ? (
+        <TrialBanner daysLeft={access.daysLeft} />
+      ) : null}
+
 
       <div className="mt-6 px-5">
         <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-black shadow-card">
