@@ -45,6 +45,7 @@ function buildSteps(activeKey: string | null, doneKeys: string[], overrides: Rec
 
 function ScanPage() {
   const navigate = useNavigate();
+  const access = useAccess();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const busyRef = useRef(false);
