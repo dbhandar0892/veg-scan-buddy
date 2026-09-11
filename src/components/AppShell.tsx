@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
