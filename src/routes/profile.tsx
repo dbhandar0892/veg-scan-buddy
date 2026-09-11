@@ -77,12 +77,14 @@ function ProfilePage() {
     const { error } = await supabase
       .from("profiles")
       .upsert({ id: user.id, display_name: displayName.trim() || null }, { onConflict: "id" });
-    if (error) setErr("Could not save. Please try again.");
-    else {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    if (error) {
+      setErr("Could not save. Please try again.");
+      setSaving(false);
+      return;
     }
+    setSaved(true);
     setSaving(false);
+    setTimeout(() => navigate({ to: "/" }), 700);
   };
 
   const signOut = async () => {
