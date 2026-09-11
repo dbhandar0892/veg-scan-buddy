@@ -141,27 +141,67 @@ function AuthPage() {
   };
 
 
-  const sendMagicLink = async (e: React.FormEvent) => {
+  const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    const mail = email.trim();
+    if (!mail || !password) return;
     setErr(null);
     setMsg(null);
     setBusy("email");
     try {
-      const emailRedirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`
-          : undefined;
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo },
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: mail,
+          password,
+          options: {
+            emailRedirectTo:
+              typeof window !== "undefined" ? window.location.origin : undefined,
+          },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setMsg("Account created. Check your inbox to confirm, then sign in.");
+          setMode("signin");
+          return;
+        }
+        navigate({ to: destination, replace: true });
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: mail,
+        password,
       });
-      if (error) throw error;
-      setMsg("Check your inbox for a sign-in link.");
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) {
+          throw new Error("Wrong email or password. Try again, or create an account.");
+        }
+        throw error;
+      }
+      navigate({ to: destination, replace: true });
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Could not send email. Try again.");
+      setErr(e instanceof Error ? e.message : "Could not sign in. Try again.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const resetPassword = async () => {
+    const mail = email.trim();
+    if (!mail) {
+      setErr("Enter your email first, then tap reset.");
+      return;
+    }
+    setErr(null);
+    setMsg(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(mail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setMsg("Password reset link sent to your email.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not send reset email.");
     }
   };
 
