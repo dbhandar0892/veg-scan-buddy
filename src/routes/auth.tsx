@@ -45,6 +45,8 @@ function AuthPage() {
   const { redirect } = Route.useSearch();
   const destination = redirect ?? "/profile";
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [showEmail, setShowEmail] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -139,27 +141,67 @@ function AuthPage() {
   };
 
 
-  const sendMagicLink = async (e: React.FormEvent) => {
+  const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    const mail = email.trim();
+    if (!mail || !password) return;
     setErr(null);
     setMsg(null);
     setBusy("email");
     try {
-      const emailRedirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`
-          : undefined;
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo },
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: mail,
+          password,
+          options: {
+            emailRedirectTo:
+              typeof window !== "undefined" ? window.location.origin : undefined,
+          },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setMsg("Account created. Check your inbox to confirm, then sign in.");
+          setMode("signin");
+          return;
+        }
+        navigate({ to: destination, replace: true });
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: mail,
+        password,
       });
-      if (error) throw error;
-      setMsg("Check your inbox for a sign-in link.");
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) {
+          throw new Error("Wrong email or password. Try again, or create an account.");
+        }
+        throw error;
+      }
+      navigate({ to: destination, replace: true });
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Could not send email. Try again.");
+      setErr(e instanceof Error ? e.message : "Could not sign in. Try again.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const resetPassword = async () => {
+    const mail = email.trim();
+    if (!mail) {
+      setErr("Enter your email first, then tap reset.");
+      return;
+    }
+    setErr(null);
+    setMsg(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(mail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setMsg("Password reset link sent to your email.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not send reset email.");
     }
   };
 
@@ -240,7 +282,7 @@ function AuthPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={sendMagicLink} className="space-y-3">
+            <form onSubmit={submitPassword} className="space-y-3">
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Email address
@@ -249,9 +291,25 @@ function AuthPage() {
                   type="email"
                   autoFocus
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  className="mt-2 w-full rounded-2xl border border-border bg-card px-4 py-4 text-base outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Password
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="mt-2 w-full rounded-2xl border border-border bg-card px-4 py-4 text-base outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>
@@ -261,8 +319,30 @@ function AuthPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-card transition active:scale-[0.99] disabled:opacity-60"
               >
                 {busy === "email" ? <Loader2 className="size-5 animate-spin" /> : null}
-                Send sign-in link
+                {mode === "signup" ? "Create account" : "Sign in"}
               </button>
+              <div className="flex items-center justify-between pt-1 text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === "signup" ? "signin" : "signup");
+                    setErr(null);
+                    setMsg(null);
+                  }}
+                  className="font-medium text-foreground underline underline-offset-2"
+                >
+                  {mode === "signup" ? "I already have an account" : "Create an account"}
+                </button>
+                {mode === "signin" ? (
+                  <button
+                    type="button"
+                    onClick={resetPassword}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Forgot password?
+                  </button>
+                ) : null}
+              </div>
               {msg ? (
                 <p className="rounded-xl bg-vegan-soft px-3 py-2 text-center text-sm text-vegan">
                   {msg}
