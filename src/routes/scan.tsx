@@ -17,6 +17,22 @@ import { Paywall, TrialBanner } from "@/components/Paywall";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
+  head: () => ({
+    meta: [
+      { title: "Scan food products | VegSeal" },
+      {
+        name: "description",
+        content: "Scan a barcode or ingredient label to check whether a food product is vegan or vegetarian.",
+      },
+      { property: "og:title", content: "Scan food products | VegSeal" },
+      {
+        property: "og:description",
+        content: "Scan a barcode or ingredient label to check whether a food product is vegan or vegetarian.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 type Status =
@@ -331,6 +347,10 @@ function ScanPage() {
 
 
   useEffect(() => {
+    if (!access.loading && !access.user) {
+      navigate({ to: "/auth", search: { redirect: "/scan" }, replace: true });
+      return;
+    }
     if (!access.hasAccess) return;
     start();
     return () => {
@@ -338,7 +358,7 @@ function ScanPage() {
       if (slowTimer.current) clearTimeout(slowTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [access.hasAccess]);
+  }, [access.hasAccess, access.loading, access.user, navigate]);
 
   const retry = () => {
     resetProgress();
@@ -355,7 +375,17 @@ function ScanPage() {
 
   const busy = status === "looking-up" || status === "analyzing";
 
-  if (!access.loading && !access.hasAccess) {
+  if (access.loading || !access.user) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!access.hasAccess) {
     return (
       <AppShell>
         <div className="px-5 pt-8">
