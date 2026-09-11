@@ -282,7 +282,7 @@ function AuthPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={sendMagicLink} className="space-y-3">
+            <form onSubmit={submitPassword} className="space-y-3">
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Email address
@@ -291,9 +291,25 @@ function AuthPage() {
                   type="email"
                   autoFocus
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  className="mt-2 w-full rounded-2xl border border-border bg-card px-4 py-4 text-base outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Password
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="mt-2 w-full rounded-2xl border border-border bg-card px-4 py-4 text-base outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>
@@ -303,8 +319,30 @@ function AuthPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-card transition active:scale-[0.99] disabled:opacity-60"
               >
                 {busy === "email" ? <Loader2 className="size-5 animate-spin" /> : null}
-                Send sign-in link
+                {mode === "signup" ? "Create account" : "Sign in"}
               </button>
+              <div className="flex items-center justify-between pt-1 text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === "signup" ? "signin" : "signup");
+                    setErr(null);
+                    setMsg(null);
+                  }}
+                  className="font-medium text-foreground underline underline-offset-2"
+                >
+                  {mode === "signup" ? "I already have an account" : "Create an account"}
+                </button>
+                {mode === "signin" ? (
+                  <button
+                    type="button"
+                    onClick={resetPassword}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Forgot password?
+                  </button>
+                ) : null}
+              </div>
               {msg ? (
                 <p className="rounded-xl bg-vegan-soft px-3 py-2 text-center text-sm text-vegan">
                   {msg}
