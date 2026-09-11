@@ -19,7 +19,7 @@ function FavoritesPage() {
   }, []);
   return (
     <AppShell>
-      <PageHeader title="Favorites" subtitle="Save products you buy again and again." />
+      <PageHeader back title="Favorites" subtitle="Save products you buy again and again." />
       <div className="px-5 pt-2">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">

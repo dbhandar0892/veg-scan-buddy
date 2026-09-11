@@ -26,6 +26,7 @@ function HistoryPage() {
   return (
     <AppShell>
       <PageHeader
+        back
         title="History"
         subtitle="Every product you've scanned, stored on this device."
         right={
