@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ScanLine, History, Heart, Settings } from "lucide-react";
+import { Home, ScanLine, History, Heart, UserRound } from "lucide-react";
 
 type NavItem = {
-  to: "/" | "/scan" | "/history" | "/favorites" | "/settings";
+  to: "/" | "/scan" | "/history" | "/favorites" | "/profile";
   label: string;
   icon: typeof Home;
   primary?: boolean;
@@ -13,7 +13,7 @@ const items: NavItem[] = [
   { to: "/scan", label: "Scan", icon: ScanLine, primary: true },
   { to: "/history", label: "History", icon: History },
   { to: "/favorites", label: "Favorites", icon: Heart },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/profile", label: "Profile", icon: UserRound },
 ];
 
 export function BottomNav() {

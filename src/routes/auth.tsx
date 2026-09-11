@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -41,22 +42,28 @@ function AuthPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/profile", replace: true });
+    });
+  }, [navigate]);
+
   const oauth = async (provider: "google" | "apple") => {
     setErr(null);
     setBusy(provider);
     try {
-      const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo },
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
       });
-      if (error) throw error;
+      if (result.error) throw new Error(String(result.error));
+      if (result.redirected) return;
+      navigate({ to: "/profile", replace: true });
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Sign-in failed. Please try again.");
       setBusy(null);
     }
   };
+
 
   const sendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -14,6 +14,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ScanRouteImport } from './routes/scan'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as FavoritesRouteImport } from './routes/favorites'
@@ -47,6 +48,11 @@ const SearchRoute = SearchRouteImport.update({
 const ScanRoute = ScanRouteImport.update({
   id: '/scan',
   path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/history': typeof HistoryRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/history'
     | '/privacy'
+    | '/profile'
     | '/scan'
     | '/search'
     | '/settings'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/history'
     | '/privacy'
+    | '/profile'
     | '/scan'
     | '/search'
     | '/settings'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/history'
     | '/privacy'
+    | '/profile'
     | '/scan'
     | '/search'
     | '/settings'
@@ -202,6 +214,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   HistoryRoute: typeof HistoryRoute
   PrivacyRoute: typeof PrivacyRoute
+  ProfileRoute: typeof ProfileRoute
   ScanRoute: typeof ScanRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/scan'
       fullPath: '/scan'
       preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -322,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   HistoryRoute: HistoryRoute,
   PrivacyRoute: PrivacyRoute,
+  ProfileRoute: ProfileRoute,
   ScanRoute: ScanRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
