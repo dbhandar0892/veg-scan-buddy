@@ -355,6 +355,19 @@ function ScanPage() {
 
   const busy = status === "looking-up" || status === "analyzing";
 
+  if (!access.loading && !access.hasAccess) {
+    return (
+      <AppShell>
+        <div className="px-5 pt-8">
+          <h1 className="font-display text-3xl tracking-tight text-foreground">
+            Scan
+          </h1>
+        </div>
+        <Paywall signedIn={Boolean(access.user)} />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="px-5 pt-8">
@@ -362,6 +375,11 @@ function ScanPage() {
           Scan
         </h1>
       </div>
+
+      {!access.isSubscribed && access.daysLeft > 0 ? (
+        <TrialBanner daysLeft={access.daysLeft} />
+      ) : null}
+
 
       <div className="mt-6 px-5">
         <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-black shadow-card">
