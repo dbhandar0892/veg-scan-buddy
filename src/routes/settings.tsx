@@ -17,7 +17,7 @@ function SettingsPage() {
   };
   return (
     <AppShell>
-      <PageHeader title="Settings" />
+      <PageHeader back title="Settings" />
       <div className="px-5 space-y-6">
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
