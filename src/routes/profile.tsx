@@ -95,7 +95,7 @@ function ProfilePage() {
   if (loading) {
     return (
       <AppShell>
-        <PageHeader title="Profile" />
+        <PageHeader back title="Profile" />
         <div className="grid place-items-center py-20">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
@@ -106,7 +106,7 @@ function ProfilePage() {
   if (!user) {
     return (
       <AppShell>
-        <PageHeader title="Profile" />
+        <PageHeader back title="Profile" />
         <div className="px-5">
           <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-soft">
             <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent">
@@ -135,7 +135,7 @@ function ProfilePage() {
 
   return (
     <AppShell>
-      <PageHeader title="Profile" />
+      <PageHeader back title="Profile" />
       <div className="space-y-6 px-5">
         <section className="flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft">
           {avatarUrl ? (
