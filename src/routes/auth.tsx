@@ -51,9 +51,75 @@ function AuthPage() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: destination, replace: true });
+    let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) navigate({ to: destination, replace: true });
+    };
+
+    const run = async () => {
+      const url = new URL(window.location.href);
+      const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+
+      const errorDescription =
+        url.searchParams.get("error_description") ?? hash.get("error_description");
+      if (errorDescription) {
+        setErr(
+          /expired|invalid|not found/i.test(errorDescription)
+            ? "That sign-in link has expired or was already used. Request a new one below."
+            : errorDescription,
+        );
+        window.history.replaceState({}, "", url.pathname + url.search.replace(/[?&]error[^&]*/g, ""));
+        return;
+      }
+
+      const code = url.searchParams.get("code");
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+
+      try {
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          window.history.replaceState({}, "", `${url.pathname}${url.search.replace(/([?&])code=[^&]*/, "$1").replace(/[?&]$/, "")}`);
+          finish();
+          return;
+        }
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          window.history.replaceState({}, "", url.pathname + url.search);
+          finish();
+          return;
+        }
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setErr(
+            e instanceof Error && /expired|invalid|not found|code verifier/i.test(e.message)
+              ? "That sign-in link has expired or was already used. Request a new one below."
+              : "Could not complete sign-in. Please try again.",
+          );
+        }
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session) finish();
+    };
+
+    run();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) finish();
     });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, [destination, navigate]);
 
   const oauth = async (provider: "google" | "apple") => {
