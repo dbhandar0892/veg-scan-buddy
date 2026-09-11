@@ -67,12 +67,25 @@ export function useAccess(): AccessState {
         return;
       }
 
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from("profiles")
         .select("trial_started_at, is_subscribed")
         .eq("id", user.id)
         .maybeSingle();
       if (!active) return;
+
+      // Signed in but no profile row (e.g. account created before the
+      // profiles trigger existed, or data was reset) — create it now so the
+      // trial starts instead of the user being stuck on the paywall.
+      if (!profile) {
+        const { data: created } = await supabase
+          .from("profiles")
+          .upsert({ id: user.id }, { onConflict: "id" })
+          .select("trial_started_at, is_subscribed")
+          .maybeSingle();
+        if (!active) return;
+        profile = created;
+      }
 
       const trialStartedAt = profile?.trial_started_at ?? null;
       const isSubscribed = profile?.is_subscribed ?? false;
