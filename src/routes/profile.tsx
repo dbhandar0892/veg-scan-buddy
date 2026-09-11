@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccess, PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
