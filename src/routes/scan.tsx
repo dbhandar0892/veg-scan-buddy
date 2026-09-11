@@ -331,13 +331,14 @@ function ScanPage() {
 
 
   useEffect(() => {
+    if (!access.hasAccess) return;
     start();
     return () => {
       stopCamera();
       if (slowTimer.current) clearTimeout(slowTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [access.hasAccess]);
 
   const retry = () => {
     resetProgress();
