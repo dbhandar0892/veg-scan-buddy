@@ -12,6 +12,8 @@ import {
   type ProductCandidate,
 } from "@/lib/vegseal.functions";
 import { pushHistory } from "@/lib/local-store";
+import { useAccess } from "@/lib/access";
+import { Paywall, TrialBanner } from "@/components/Paywall";
 
 export const Route = createFileRoute("/scan")({
   component: ScanPage,
