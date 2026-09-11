@@ -45,6 +45,8 @@ function AuthPage() {
   const { redirect } = Route.useSearch();
   const destination = redirect ?? "/profile";
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [showEmail, setShowEmail] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
