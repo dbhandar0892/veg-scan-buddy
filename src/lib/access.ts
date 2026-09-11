@@ -8,6 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 export const TRIAL_DAYS = 7;
 export const PRICE_MONTHLY = "$2.99";
 
+function isDefinitiveAuthError(message: string): boolean {
+  return /invalid|expired|user_not_found|does not exist|sub claim/i.test(message);
+}
+
 export interface AccessState {
   loading: boolean;
   user: User | null;
@@ -51,7 +55,10 @@ export function useAccess(): AccessState {
         // Validate/refresh in the background; keep the session user on failure.
         const { data: userData, error } = await supabase.auth.getUser();
         if (!error && userData.user) user = userData.user;
-        else if (error && /invalid|expired/i.test(error.message)) user = null;
+        else if (error && isDefinitiveAuthError(error.message)) {
+          await supabase.auth.signOut({ scope: "local" });
+          user = null;
+        }
       }
       if (!active) return;
 

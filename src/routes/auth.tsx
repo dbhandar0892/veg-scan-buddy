@@ -109,7 +109,14 @@ function AuthPage() {
       }
 
       const { data } = await supabase.auth.getSession();
-      if (data.session) finish();
+      if (data.session) {
+        const { data: userData, error } = await supabase.auth.getUser();
+        if (!error && userData.user) {
+          finish();
+        } else if (error && /invalid|expired|user_not_found|does not exist|sub claim/i.test(error.message)) {
+          await supabase.auth.signOut({ scope: "local" });
+        }
+      }
     };
 
     run();
