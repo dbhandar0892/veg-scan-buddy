@@ -181,6 +181,30 @@ function ProfilePage() {
 
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Plan
+          </h2>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-sm font-medium text-foreground">
+              {access.isSubscribed
+                ? `VegSeal subscription — ${PRICE_MONTHLY}/month`
+                : access.daysLeft > 0
+                  ? access.daysLeft === 1
+                    ? "Free trial — last day"
+                    : `Free trial — ${access.daysLeft} days left`
+                  : "Free trial ended"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {access.isSubscribed
+                ? "Unlimited scanning. Cancel any time."
+                : access.daysLeft > 0
+                  ? `Unlimited scanning during your ${TRIAL_DAYS}-day trial, then ${PRICE_MONTHLY} a month.`
+                  : `Subscribe for ${PRICE_MONTHLY} a month to keep scanning.`}
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Your stuff
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
