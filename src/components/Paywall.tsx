@@ -69,16 +69,29 @@ export function Paywall({ signedIn }: { signedIn: boolean }) {
           <>
             <button
               type="button"
-              disabled
+              onClick={() => run("buy")}
+              disabled={busy !== null}
               className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card disabled:opacity-60"
             >
-              Subscribe for {PRICE_MONTHLY}/month
+              {busy === "buy" ? "Opening App Store…" : `Subscribe for ${PRICE_MONTHLY}/month`}
+            </button>
+            <button
+              type="button"
+              onClick={() => run("restore")}
+              disabled={busy !== null}
+              className="mt-2 w-full rounded-2xl border border-border py-3 text-sm font-medium text-foreground disabled:opacity-60"
+            >
+              {busy === "restore" ? "Checking…" : "Restore purchase"}
             </button>
             <p className="mt-2 text-xs text-muted-foreground">
-              Subscriptions open shortly — you'll be able to pay right here.
+              {note ??
+                (native
+                  ? "Billed through your Apple ID. Cancel any time in Settings."
+                  : "Subscriptions are available in the VegSeal app on iPhone.")}
             </p>
           </>
         ) : (
+
           <Link
             to="/auth"
             className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card"
