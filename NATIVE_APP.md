@@ -68,3 +68,18 @@ server-rendered.
 npx cap sync ios
 npx cap open ios
 ```
+
+## Apple In-App Purchase (subscription)
+
+The app code is ready; the remaining steps happen in your local checkout and Apple's tools.
+
+1. App Store Connect → create an auto-renewing subscription, product id
+   `com.vegseal.app.pro.monthly`, price $2.99/month (optionally a 7-day intro free trial).
+2. RevenueCat → create a project, add the iOS app, attach the product to an
+   offering, and create an entitlement with id `pro`. Copy the iOS public SDK key.
+3. Locally: `npm i @revenuecat/purchases-capacitor && npx cap sync ios`.
+4. Set `VITE_REVENUECAT_IOS_KEY=<public sdk key>` for the build.
+5. Test with a sandbox Apple ID in TestFlight.
+
+Purchases write `profiles.is_subscribed` so the paywall unlocks after payment.
+"Restore purchase" re-checks the Apple ID's entitlements.
