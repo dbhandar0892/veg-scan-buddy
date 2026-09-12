@@ -249,7 +249,7 @@ function AuthPage() {
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
               {redirect === "/scan"
-                ? "Welcome back. Sign in to continue scanning. New users get a 7-day free trial."
+                ? "Please sign in to continue scanning. New users get a 7-day free trial."
                 : "Sign in to keep your scans across devices."}
             </p>
           </div>
