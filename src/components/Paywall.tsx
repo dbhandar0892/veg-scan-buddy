@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ShieldCheck, Sparkles } from "lucide-react";
 import { PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
+import { isNativeApp, purchaseSubscription, restorePurchases } from "@/lib/iap";
 
 const PERKS = [
   "Unlimited barcode and ingredient-label scans",
@@ -9,7 +11,32 @@ const PERKS = [
 ];
 
 export function Paywall({ signedIn }: { signedIn: boolean }) {
+  const [busy, setBusy] = useState<"buy" | "restore" | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const native = isNativeApp();
+
+  const run = async (kind: "buy" | "restore") => {
+    setBusy(kind);
+    setNote(null);
+    const result = kind === "buy" ? await purchaseSubscription() : await restorePurchases();
+    setBusy(null);
+    if (result.status === "active") {
+      setNote("You're subscribed. Thanks for supporting VegSeal!");
+      window.location.reload();
+      return;
+    }
+    if (result.status === "unavailable")
+      setNote("Subscriptions are available in the VegSeal app on iPhone.");
+    else if (result.status === "cancelled") setNote(null);
+    else if (result.status === "none")
+      setNote(
+        kind === "restore" ? "No active subscription found for this Apple ID." : "Purchase not completed.",
+      );
+    else setNote(result.message);
+  };
+
   return (
+
     <div className="px-5 pt-6">
       <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-card">
         <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent">
@@ -42,16 +69,29 @@ export function Paywall({ signedIn }: { signedIn: boolean }) {
           <>
             <button
               type="button"
-              disabled
+              onClick={() => run("buy")}
+              disabled={busy !== null}
               className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card disabled:opacity-60"
             >
-              Subscribe for {PRICE_MONTHLY}/month
+              {busy === "buy" ? "Opening App Store…" : `Subscribe for ${PRICE_MONTHLY}/month`}
+            </button>
+            <button
+              type="button"
+              onClick={() => run("restore")}
+              disabled={busy !== null}
+              className="mt-2 w-full rounded-2xl border border-border py-3 text-sm font-medium text-foreground disabled:opacity-60"
+            >
+              {busy === "restore" ? "Checking…" : "Restore purchase"}
             </button>
             <p className="mt-2 text-xs text-muted-foreground">
-              Subscriptions open shortly — you'll be able to pay right here.
+              {note ??
+                (native
+                  ? "Billed through your Apple ID. Cancel any time in Settings."
+                  : "Subscriptions are available in the VegSeal app on iPhone.")}
             </p>
           </>
         ) : (
+
           <Link
             to="/auth"
             className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card"
