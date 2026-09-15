@@ -39,6 +39,70 @@ async function loadKnownIngredients(): Promise<KnownIngredient[]> {
   return rows;
 }
 
+interface OffProduct {
+  product_name?: string;
+  brands?: string;
+  image_front_url?: string;
+  image_url?: string;
+  categories?: string;
+  ingredients_text_en?: string;
+  ingredients_text?: string;
+}
+
+// Open Food Facts lookups are the first hop of every scan. Query all barcode
+// variants in parallel (instead of one after another) and remember the answer
+// briefly, so the quick "identify" pass and the full analysis don't repeat it.
+const offCache = new Map<string, { at: number; product: OffProduct | null }>();
+const OFF_CACHE_MS = 120_000;
+const OFF_FIELDS =
+  "product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text";
+
+function barcodeVariants(barcode: string): { raw: string; variants: string[] } {
+  const raw = barcode.replace(/\D/g, "");
+  const variants = Array.from(
+    new Set(
+      [
+        raw,
+        raw.replace(/^0+/, ""),
+        raw.length === 12 ? `0${raw}` : "",
+        raw.length === 13 && raw.startsWith("0") ? raw.slice(1) : "",
+      ].filter((c) => c.length >= 6),
+    ),
+  );
+  return { raw, variants };
+}
+
+async function fetchOffProduct(raw: string, variants: string[]): Promise<OffProduct | null> {
+  const hit = offCache.get(raw);
+  if (hit && Date.now() - hit.at < OFF_CACHE_MS) return hit.product;
+
+  const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
+  const results = await Promise.all(
+    variants.map(async (code) => {
+      const res = await fetchWithTimeout(
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${OFF_FIELDS}`,
+        { headers },
+        4000,
+      );
+      if (!res?.ok) return null;
+      try {
+        const json = (await res.json()) as { status?: number; product?: OffProduct };
+        return json.status === 1 && json.product ? json.product : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  // Prefer a variant that actually carries an ingredient list.
+  const product =
+    results.find((r) => r && (r.ingredients_text_en || r.ingredients_text || "").trim()) ??
+    results.find(Boolean) ??
+    null;
+  offCache.set(raw, { at: Date.now(), product });
+  return product;
+}
+
+
 
 function domainOf(url: string): string {
   try {
