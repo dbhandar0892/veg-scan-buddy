@@ -70,7 +70,7 @@ Return ONLY JSON matching: {"ingredients":[{"input":string,"name":string,"vegan"
         content: `Classify these ingredients. Preserve the "input" string exactly.\n\n${list}\n\nReturn JSON now.`,
       },
       ],
-    })
+    }))
   if (res.status === 429) throw new Error("AI rate limited");
   if (res.status === 402) throw new Error("AI credits exhausted");
   if (!res.ok) throw new Error(`AI classify failed (${res.status})`);
@@ -220,7 +220,7 @@ Search the web now and return the JSON.`;
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      })
+      }))
   } catch (err) {
     console.error("[research] network error:", err);
     return [];
@@ -271,7 +271,7 @@ export async function findIngredientsOnWeb(ctx: {
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      })
+      }))
   } catch (err) {
     console.error("[find-ingredients] network error:", err);
     return null;
@@ -350,7 +350,7 @@ Search the manufacturer's site first, then trusted sources, and return the JSON.
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      })
+      }))
   } catch (err) {
     console.error("[product-research] network error:", err);
     return null;
@@ -435,7 +435,7 @@ Determine the rennet type and return the JSON.`;
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      })
+      }))
   } catch (err) {
     console.error("[rennet-research] network error:", err);
     return null;
@@ -491,7 +491,7 @@ export async function findProductByBarcodeOnWeb(barcode: string): Promise<{
         { role: "system", content: system },
         { role: "user", content: `Barcode: ${barcode}\nIdentify this product and return its ingredient list.` },
       ],
-      })
+      }))
   } catch (err) {
     console.error("[barcode-web] network error:", err);
     return null;
