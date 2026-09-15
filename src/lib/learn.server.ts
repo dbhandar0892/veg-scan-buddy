@@ -2,6 +2,25 @@
 // to the ingredients table so the database learns over time.
 import type { KnownIngredient, IngredientCategory } from "./analyzer";
 
+const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_TIMEOUT_MS = 15_000;
+
+// Bound every AI call so one slow web-research pass can't stall a whole scan.
+async function aiFetch(key: string, body: unknown, timeoutMs = AI_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(AI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -41,21 +60,17 @@ Rules:
 
 Return ONLY JSON matching: {"ingredients":[{"input":string,"name":string,"vegan":boolean|null,"vegetarian":boolean|null,"category":string,"confidence":number,"explanation":string,"aliases":string[]}]}`;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-    body: JSON.stringify({
+  const res = await aiFetch(key, ({
       model: "google/gemini-2.5-flash",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: `Classify these ingredients. Preserve the "input" string exactly.\n\n${list}\n\nReturn JSON now.`,
-        },
+      { role: "system", content: system },
+      {
+        role: "user",
+        content: `Classify these ingredients. Preserve the "input" string exactly.\n\n${list}\n\nReturn JSON now.`,
+      },
       ],
-    }),
-  });
+    })
   if (res.status === 429) throw new Error("AI rate limited");
   if (res.status === 402) throw new Error("AI credits exhausted");
   if (!res.ok) throw new Error(`AI classify failed (${res.status})`);
@@ -194,22 +209,18 @@ Search the web now and return the JSON.`;
 
   let res: Response;
   try {
-    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        // OpenRouter web-search plugin — enables live grounding with URL citations.
-        // (The Gemini-native `tools: [{ type: "google_search" }]` field is
-        // rejected on this path with MALFORMED_FUNCTION_CALL.)
-        plugins: [{ id: "web", max_results: 5 }],
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
+    res = await aiFetch(key, ({
+      model: "google/gemini-2.5-flash",
+      response_format: { type: "json_object" },
+      // OpenRouter web-search plugin — enables live grounding with URL citations.
+      // (The Gemini-native `tools: [{ type: "google_search" }]` field is
+      // rejected on this path with MALFORMED_FUNCTION_CALL.)
+      plugins: [{ id: "web", max_results: 5 }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      })
   } catch (err) {
     console.error("[research] network error:", err);
     return [];
@@ -252,19 +263,15 @@ export async function findIngredientsOnWeb(ctx: {
 
   let res: Response;
   try {
-    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        plugins: [{ id: "web", max_results: 5 }],
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
+    res = await aiFetch(key, ({
+      model: "google/gemini-2.5-flash",
+      response_format: { type: "json_object" },
+      plugins: [{ id: "web", max_results: 5 }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      })
   } catch (err) {
     console.error("[find-ingredients] network error:", err);
     return null;
@@ -335,19 +342,15 @@ Search the manufacturer's site first, then trusted sources, and return the JSON.
 
   let res: Response;
   try {
-    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        plugins: [{ id: "web", max_results: 5 }],
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
+    res = await aiFetch(key, ({
+      model: "google/gemini-2.5-flash",
+      response_format: { type: "json_object" },
+      plugins: [{ id: "web", max_results: 5 }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      })
   } catch (err) {
     console.error("[product-research] network error:", err);
     return null;
@@ -424,19 +427,15 @@ Determine the rennet type and return the JSON.`;
 
   let res: Response;
   try {
-    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        plugins: [{ id: "web", max_results: 5 }],
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
+    res = await aiFetch(key, ({
+      model: "google/gemini-2.5-flash",
+      response_format: { type: "json_object" },
+      plugins: [{ id: "web", max_results: 5 }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      })
   } catch (err) {
     console.error("[rennet-research] network error:", err);
     return null;
@@ -484,19 +483,15 @@ export async function findProductByBarcodeOnWeb(barcode: string): Promise<{
 
   let res: Response;
   try {
-    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        plugins: [{ id: "web", max_results: 5 }],
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: `Barcode: ${barcode}\nIdentify this product and return its ingredient list.` },
-        ],
-      }),
-    });
+    res = await aiFetch(key, ({
+      model: "google/gemini-2.5-flash",
+      response_format: { type: "json_object" },
+      plugins: [{ id: "web", max_results: 5 }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: `Barcode: ${barcode}\nIdentify this product and return its ingredient list.` },
+      ],
+      })
   } catch (err) {
     console.error("[barcode-web] network error:", err);
     return null;
