@@ -460,14 +460,10 @@ export async function lookupBarcodeCore(data: { barcode: string }): Promise<Anal
 
     // Barcode variants: scanners report UPC-A (12) while databases often store
     // EAN-13 (leading zero) and vice versa.
-    const raw = data.barcode.replace(/\D/g, "");
-    const variants = Array.from(
-      new Set(
-        [raw, raw.replace(/^0+/, ""), raw.length === 12 ? `0${raw}` : "", raw.length === 13 && raw.startsWith("0") ? raw.slice(1) : ""].filter(
-          (c) => c.length >= 6,
-        ),
-      ),
-    );
+    const { raw, variants } = barcodeVariants(data.barcode);
+
+    // Warm the ingredient table while the network lookups run.
+    const knownWarm = loadKnownIngredients().catch(() => null);
 
     // Check cache first (any variant)
     const cached = await client
@@ -480,36 +476,9 @@ export async function lookupBarcodeCore(data: { barcode: string }): Promise<Anal
       return refreshIfUncertain(cached.data as unknown as AnalyzedProduct);
     }
 
-    const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
-    const fields = "product_name,brands,image_front_url,image_url,categories,ingredients_text_en,ingredients_text";
-    type OffProduct = {
-      product_name?: string;
-      brands?: string;
-      image_front_url?: string;
-      image_url?: string;
-      categories?: string;
-      ingredients_text_en?: string;
-      ingredients_text?: string;
-    };
+    const p = await fetchOffProduct(raw, variants);
+    await knownWarm;
 
-    let p: OffProduct | null = null;
-    for (const code of variants) {
-      const res = await fetchWithTimeout(
-        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`,
-        { headers },
-        5000,
-      );
-      if (!res?.ok) continue;
-      try {
-        const json = (await res.json()) as { status?: number; product?: OffProduct };
-        if (json.status === 1 && json.product) {
-          p = json.product;
-          break;
-        }
-      } catch {
-        // try next variant
-      }
-    }
 
     const offIngredients = p ? (p.ingredients_text_en || p.ingredients_text || "").trim() : "";
 
