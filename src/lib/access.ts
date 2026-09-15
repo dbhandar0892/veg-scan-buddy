@@ -33,6 +33,59 @@ export function trialDaysLeft(trialStartedAt: string | null): number {
   return Math.ceil(ms / (24 * 60 * 60 * 1000));
 }
 
+// Remembered across route changes (and across app opens via localStorage) so
+// the app can paint instantly instead of waiting on network round-trips.
+const CACHE_KEY = "vegseal.access";
+
+type CachedAccess = { userId: string; trialStartedAt: string | null; isSubscribed: boolean };
+
+let memoryCache: CachedAccess | null = null;
+
+function readCache(): CachedAccess | null {
+  if (memoryCache) return memoryCache;
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    memoryCache = JSON.parse(raw) as CachedAccess;
+    return memoryCache;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(value: CachedAccess | null) {
+  memoryCache = value;
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (value) localStorage.setItem(CACHE_KEY, JSON.stringify(value));
+    else localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function stateFrom(user: User, cached: { trialStartedAt: string | null; isSubscribed: boolean }): AccessState {
+  const daysLeft = trialDaysLeft(cached.trialStartedAt);
+  return {
+    loading: false,
+    user,
+    isSubscribed: cached.isSubscribed,
+    trialStartedAt: cached.trialStartedAt,
+    daysLeft,
+    hasAccess: cached.isSubscribed || daysLeft > 0,
+  };
+}
+
+const SIGNED_OUT: AccessState = {
+  loading: false,
+  user: null,
+  isSubscribed: false,
+  trialStartedAt: null,
+  daysLeft: 0,
+  hasAccess: false,
+};
+
 export function useAccess(): AccessState {
   const [state, setState] = useState<AccessState>({
     loading: true,
@@ -50,27 +103,31 @@ export function useAccess(): AccessState {
       // Trust the locally stored session first so a network hiccup never
       // makes a signed-in user look signed out (and get bounced to /auth).
       const { data: sessionData } = await supabase.auth.getSession();
-      let user = sessionData.session?.user ?? null;
-      if (user) {
-        // Validate/refresh in the background; keep the session user on failure.
-        const { data: userData, error } = await supabase.auth.getUser();
-        if (!error && userData.user) user = userData.user;
-        else if (error && isDefinitiveAuthError(error.message)) {
-          await supabase.auth.signOut({ scope: "local" });
-          user = null;
-        }
-      }
+      const sessionUser = sessionData.session?.user ?? null;
       if (!active) return;
 
-      if (!user) {
-        setState({
-          loading: false,
-          user: null,
-          isSubscribed: false,
-          trialStartedAt: null,
-          daysLeft: 0,
-          hasAccess: false,
-        });
+      if (!sessionUser) {
+        writeCache(null);
+        setState(SIGNED_OUT);
+        return;
+      }
+
+      // Paint immediately from the last known trial/subscription state.
+      const cached = readCache();
+      if (cached && cached.userId === sessionUser.id) {
+        setState(stateFrom(sessionUser, cached));
+      }
+
+      // Validate the session in the background; keep it on transient failures.
+      let user = sessionUser;
+      const { data: userData, error } = await supabase.auth.getUser();
+      if (!active) return;
+      if (!error && userData.user) user = userData.user;
+      else if (error && isDefinitiveAuthError(error.message)) {
+        await supabase.auth.signOut({ scope: "local" });
+        if (!active) return;
+        writeCache(null);
+        setState(SIGNED_OUT);
         return;
       }
 
@@ -94,18 +151,12 @@ export function useAccess(): AccessState {
         profile = created;
       }
 
-      const trialStartedAt = profile?.trial_started_at ?? null;
-      const isSubscribed = profile?.is_subscribed ?? false;
-      const daysLeft = trialDaysLeft(trialStartedAt);
-
-      setState({
-        loading: false,
-        user,
-        isSubscribed,
-        trialStartedAt,
-        daysLeft,
-        hasAccess: isSubscribed || daysLeft > 0,
-      });
+      const fresh = {
+        trialStartedAt: profile?.trial_started_at ?? null,
+        isSubscribed: profile?.is_subscribed ?? false,
+      };
+      writeCache({ userId: user.id, ...fresh });
+      setState(stateFrom(user, fresh));
     };
 
     load();
@@ -120,3 +171,4 @@ export function useAccess(): AccessState {
 
   return state;
 }
+
