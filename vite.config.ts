@@ -31,7 +31,7 @@ export default defineConfig({
             handler: "NetworkFirst",
             options: {
               cacheName: "vegseal-pages",
-              networkTimeoutSeconds: 4,
+              networkTimeoutSeconds: 2,
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 7 },
             },
           },
