@@ -564,17 +564,7 @@ export type BarcodeIdentity =
 export async function identifyBarcodeCore(data: { barcode: string }): Promise<BarcodeIdentity> {
     const supabase = serverSupabase();
     const client = supabase as unknown as ReturnType<typeof createClient>;
-    const raw = data.barcode.replace(/\D/g, "");
-    const variants = Array.from(
-      new Set(
-        [
-          raw,
-          raw.replace(/^0+/, ""),
-          raw.length === 12 ? `0${raw}` : "",
-          raw.length === 13 && raw.startsWith("0") ? raw.slice(1) : "",
-        ].filter((c) => c.length >= 6),
-      ),
-    );
+    const { raw, variants } = barcodeVariants(data.barcode);
 
     const cached = await client.from("products").select("*").in("barcode", variants).limit(1).maybeSingle();
     if (cached.data) {
@@ -591,42 +581,18 @@ export async function identifyBarcodeCore(data: { barcode: string }): Promise<Ba
       };
     }
 
-    const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
-    const fields = "product_name,brands,image_front_url,image_url,ingredients_text_en,ingredients_text";
-    for (const code of variants) {
-      const res = await fetchWithTimeout(
-        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`,
-        { headers },
-        5000,
-      );
-      if (!res?.ok) continue;
-      try {
-        const json = (await res.json()) as {
-          status?: number;
-          product?: {
-            product_name?: string;
-            brands?: string;
-            image_front_url?: string;
-            image_url?: string;
-            ingredients_text_en?: string;
-            ingredients_text?: string;
-          };
-        };
-        if (json.status === 1 && json.product) {
-          const p = json.product;
-          return {
-            kind: "found",
-            name: p.product_name || "Scanned product",
-            brand: p.brands ?? null,
-            image_url: p.image_front_url ?? p.image_url ?? null,
-            hasIngredients: Boolean((p.ingredients_text_en || p.ingredients_text || "").trim()),
-          };
-        }
-      } catch {
-        // try next variant
-      }
+    const p = await fetchOffProduct(raw, variants);
+    if (p) {
+      return {
+        kind: "found",
+        name: p.product_name || "Scanned product",
+        brand: p.brands ?? null,
+        image_url: p.image_front_url ?? p.image_url ?? null,
+        hasIngredients: Boolean((p.ingredients_text_en || p.ingredients_text || "").trim()),
+      };
     }
     return { kind: "unidentified" };
+
 }
 
 export const identifyBarcode = createServerFn({ method: "POST" })
