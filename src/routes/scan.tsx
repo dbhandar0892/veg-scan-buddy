@@ -382,6 +382,25 @@ function ScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.hasAccess, access.loading, access.user, navigate]);
 
+  // Restart the camera when coming back to the app/page (e.g. after a result).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!access.hasAccess) return;
+      if (busyRef.current || startingRef.current) return;
+      if (controlsRef.current) return;
+      if (status === "looking-up" || status === "analyzing") return;
+      start();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.hasAccess, status]);
+
   const retry = () => {
     resetProgress();
     setError(null);
