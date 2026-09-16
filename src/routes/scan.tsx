@@ -110,18 +110,37 @@ function ScanPage() {
   };
 
   const stopCamera = () => {
-    controlsRef.current?.stop();
+    try {
+      controlsRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
     controlsRef.current = null;
+    const video = videoRef.current;
+    const stream = video?.srcObject as MediaStream | null;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      if (video) video.srcObject = null;
+    }
   };
 
   const start = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setError(null);
     setStatus("starting");
+    stopCamera();
+    busyRef.current = false;
     try {
+      const video = videoRef.current;
+      if (!video) {
+        startingRef.current = false;
+        return;
+      }
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromVideoDevice(
         undefined,
-        videoRef.current!,
+        video,
         async (result) => {
           if (!result || busyRef.current) return;
           busyRef.current = true;
@@ -139,6 +158,8 @@ function ScanPage() {
           ? "Couldn't access your camera. You can still enter a barcode manually."
           : "Camera unavailable",
       );
+    } finally {
+      startingRef.current = false;
     }
   };
 
