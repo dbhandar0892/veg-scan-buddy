@@ -65,6 +65,7 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const busyRef = useRef(false);
+  const startingRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
