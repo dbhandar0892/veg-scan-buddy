@@ -65,6 +65,7 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const busyRef = useRef(false);
+  const startingRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -110,18 +111,37 @@ function ScanPage() {
   };
 
   const stopCamera = () => {
-    controlsRef.current?.stop();
+    try {
+      controlsRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
     controlsRef.current = null;
+    const video = videoRef.current;
+    const stream = video?.srcObject as MediaStream | null;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      if (video) video.srcObject = null;
+    }
   };
 
   const start = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setError(null);
     setStatus("starting");
+    stopCamera();
+    busyRef.current = false;
     try {
+      const video = videoRef.current;
+      if (!video) {
+        startingRef.current = false;
+        return;
+      }
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromVideoDevice(
         undefined,
-        videoRef.current!,
+        video,
         async (result) => {
           if (!result || busyRef.current) return;
           busyRef.current = true;
@@ -139,6 +159,8 @@ function ScanPage() {
           ? "Couldn't access your camera. You can still enter a barcode manually."
           : "Camera unavailable",
       );
+    } finally {
+      startingRef.current = false;
     }
   };
 
@@ -359,6 +381,25 @@ function ScanPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.hasAccess, access.loading, access.user, navigate]);
+
+  // Restart the camera when coming back to the app/page (e.g. after a result).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!access.hasAccess) return;
+      if (busyRef.current || startingRef.current) return;
+      if (controlsRef.current) return;
+      if (status === "looking-up" || status === "analyzing") return;
+      start();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.hasAccess, status]);
 
   const retry = () => {
     resetProgress();
