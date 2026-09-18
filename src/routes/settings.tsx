@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Monitor, Star, MessageSquare, FileText, ShieldCheck, Info } from "lucide-react";
+import { Moon, Sun, Monitor, Star, MessageSquare, FileText, ShieldCheck, Info, LifeBuoy } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { applyTheme, getTheme } from "@/lib/local-store";
 
@@ -53,7 +53,7 @@ function SettingsPage() {
             App
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-            <Row href="/support" Icon={MessageSquare} label="Help & Support" />
+            <Row href="/support" Icon={LifeBuoy} label="Help & Support" />
             <Row href="/about" Icon={Info} label="About VegSeal" />
             <Row href="/privacy" Icon={ShieldCheck} label="Privacy" />
             <Row href="/terms" Icon={FileText} label="Terms" />
