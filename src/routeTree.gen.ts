@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
@@ -29,6 +30,11 @@ import { Route as ApiPublicV1SplatRouteImport } from './routes/api/public/v1/$'
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/ingredient/$slug': typeof IngredientSlugRoute
   '/result/$id': typeof ResultIdRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/sitemap.xml'
+    | '/support'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/sitemap.xml'
+    | '/support'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/sitemap.xml'
+    | '/support'
     | '/terms'
     | '/ingredient/$slug'
     | '/result/$id'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   IngredientSlugRoute: typeof IngredientSlugRoute
   ResultIdRoute: typeof ResultIdRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -368,6 +388,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   IngredientSlugRoute: IngredientSlugRoute,
   ResultIdRoute: ResultIdRoute,

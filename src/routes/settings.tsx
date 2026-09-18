@@ -53,6 +53,7 @@ function SettingsPage() {
             App
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            <Row href="/support" Icon={MessageSquare} label="Help & Support" />
             <Row href="/about" Icon={Info} label="About VegSeal" />
             <Row href="/privacy" Icon={ShieldCheck} label="Privacy" />
             <Row href="/terms" Icon={FileText} label="Terms" />
