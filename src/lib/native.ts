@@ -49,7 +49,7 @@ export async function shareContent(opts: { title: string; text: string; url: str
       await navigator.share(opts);
       return "shared" as const;
     }
-    await navigator.clipboard.writeText(`${opts.text}\n${opts.url}`);
+    await (navigator as Navigator).clipboard.writeText(`${opts.text}\n${opts.url}`);
     return "copied" as const;
   } catch {
     return "failed" as const;
