@@ -89,7 +89,7 @@ function ResultPage() {
             className="grid size-10 place-items-center rounded-full bg-card shadow-soft"
             aria-label="Share"
           >
-            <Share2 className="size-5" />
+            {copied ? <Check className="size-5 text-primary" /> : <Share2 className="size-5" />}
           </button>
         </div>
       </div>

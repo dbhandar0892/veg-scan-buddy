@@ -10,6 +10,11 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://vegseal.com',
     cleartext: false,
+    // Shown from the app bundle when the site can't be reached (offline).
+    errorPath: 'index.html',
+  },
+  plugins: {
+    SplashScreen: { launchAutoHide: true },
   },
   ios: {
     contentInset: 'always',
