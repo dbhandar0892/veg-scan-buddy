@@ -12,6 +12,7 @@ import {
   type ProductCandidate,
 } from "@/lib/vegseal.functions";
 import { pushHistory } from "@/lib/local-store";
+import { hapticTap } from "@/lib/native";
 import { useAccess } from "@/lib/access";
 import { Paywall, TrialBanner } from "@/components/Paywall";
 
@@ -174,6 +175,7 @@ function ScanPage() {
   };
 
   const handleBarcode = async (code: string) => {
+    hapticTap();
     lastBarcode.current = code;
     setStatus("looking-up");
     setError(null);
