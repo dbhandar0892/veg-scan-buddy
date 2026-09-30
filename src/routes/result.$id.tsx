@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
 import { getProduct, type AnalyzedProduct } from "@/lib/vegseal.functions";
 import { isFavorite, toggleFavorite } from "@/lib/local-store";
+import { hapticForStatus, hapticTap, shareContent } from "@/lib/native";
 
 
 const productQuery = (id: string) =>
@@ -38,22 +39,28 @@ function ResultPage() {
   const { data: product } = useSuspenseQuery(productQuery(id));
   const navigate = useNavigate();
   const [fav, setFav] = useState(false);
+  const [copied, setCopied] = useState(false);
   useEffect(() => setFav(isFavorite(product.id)), [product.id]);
-
-
-
+  useEffect(() => hapticForStatus(product.status), [product.id, product.status]);
 
   const share = async () => {
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      try {
-        await navigator.share({
-          title: `VegSeal — ${product.name}`,
-          text: `${product.name}: ${product.explanation}`,
-          url: typeof window !== "undefined" ? window.location.href : undefined,
-        });
-      } catch {
-        /* noop */
-      }
+    hapticTap();
+    const label =
+      product.status === "vegan"
+        ? "is vegan ✅"
+        : product.status === "vegetarian"
+          ? "is vegetarian 🥛 (not vegan)"
+          : product.status === "not_vegetarian"
+            ? "is not vegetarian ❌"
+            : "couldn't be confirmed ⚠️";
+    const r = await shareContent({
+      title: `VegSeal — ${product.name}`,
+      text: `${product.name} ${label}\n${product.explanation}\nChecked with VegSeal`,
+      url: `https://www.vegseal.com/result/${product.id}`,
+    });
+    if (r === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     }
   };
 
@@ -82,7 +89,7 @@ function ResultPage() {
             className="grid size-10 place-items-center rounded-full bg-card shadow-soft"
             aria-label="Share"
           >
-            <Share2 className="size-5" />
+            {copied ? <Check className="size-5 text-primary" /> : <Share2 className="size-5" />}
           </button>
         </div>
       </div>
