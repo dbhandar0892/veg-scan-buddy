@@ -3,6 +3,7 @@
 // using Open Food Facts store data. It never reports live inventory.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { storeListed } from "./stores";
 
 const UA = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
 
@@ -34,7 +35,6 @@ export const checkRetailer = createServerFn({ method: "POST" })
     z.object({ store: z.string().min(1).max(80), barcodes: z.array(z.string().min(4).max(32)).max(12) }).parse(input),
   )
   .handler(async ({ data }): Promise<RetailerAssociation[]> => {
-    const target = norm(data.store);
     return Promise.all(
       data.barcodes.map(async (barcode) => {
         const res = await timed(
@@ -46,10 +46,8 @@ export const checkRetailer = createServerFn({ method: "POST" })
         if (res?.ok) {
           try {
             const j = (await res.json()) as { product?: { stores?: string; stores_tags?: string[] } };
-            const names = [...(j.product?.stores_tags ?? []), ...(j.product?.stores ?? "").split(",")]
-              .map(norm)
-              .filter(Boolean);
-            carried = names.some((n) => n === target || (n.length > 3 && (n.includes(target) || target.includes(n))));
+            const names = [...(j.product?.stores_tags ?? []), ...(j.product?.stores ?? "").split(",")];
+            carried = storeListed(names, data.store);
           } catch {
             /* ignore */
           }
