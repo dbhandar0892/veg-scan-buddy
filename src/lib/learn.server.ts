@@ -520,3 +520,76 @@ export async function findProductByBarcodeOnWeb(barcode: string): Promise<{
     sources: (parsed.sources ?? []).slice(0, 3),
   };
 }
+
+// -------- Find Alternatives: Stage 1 (candidate discovery only) --------
+// The model ONLY proposes similar products. It never decides dietary status —
+// every candidate is verified separately by the normal scan pipeline.
+export interface AlternativeCandidate {
+  name: string;
+  brand: string | null;
+  why_similar: string[];
+}
+
+export async function discoverAlternatives(ctx: {
+  name: string;
+  brand: string | null;
+  category: string | null;
+  ingredients: string | null;
+  reason: string;
+  preference: "vegan" | "vegetarian";
+  priorities: string[];
+  note: string | null;
+}): Promise<{ intent: string; candidates: AlternativeCandidate[] }> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) throw new Error("Missing LOVABLE_API_KEY");
+  const system = `You help shoppers find real, currently sold packaged food products similar to one they scanned.
+Your job is ONLY candidate discovery. Do not claim any product is vegan or vegetarian — a separate system verifies that from ingredients.
+Suggest products that are likely to suit a ${ctx.preference} diet and are similar in category, format, flavor and use. Prefer well-known brands with widely published ingredient lists. Never suggest the scanned product itself. Never invent products.
+Return ONLY JSON: {"intent": string, "candidates":[{"name": string, "brand": string, "why_similar": string[]}]}
+- intent: one sentence, what the shopper probably wants (e.g. "A crunchy cheddar-style cracker that is vegan").
+- candidates: 8 items, best match first. name = exact product name as sold, brand = brand name.
+- why_similar: 2-3 short phrases (under 7 words each) about similarity only (category, flavor, texture, price). No dietary claims.`;
+  const user = `Scanned product: ${ctx.name}${ctx.brand ? ` by ${ctx.brand}` : ""}
+Category: ${ctx.category ?? "unknown"}
+Ingredients: ${(ctx.ingredients ?? "unknown").slice(0, 1200)}
+Why it does not fit: ${ctx.reason}
+Shopper's diet: ${ctx.preference}
+What matters most: ${ctx.priorities.length ? ctx.priorities.join(", ") : "no preference"}
+Extra request: ${ctx.note || "none"}`;
+  const res = await aiFetch(
+    key,
+    {
+      model: "openai/gpt-6-astra",
+      reasoning_effort: "low",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    },
+    40_000,
+  );
+  if (res.status === 429) throw new Error("VegSeal is busy right now. Please try again in a moment.");
+  if (res.status === 402) throw new Error("AI credits are used up. Please try again later.");
+  if (!res.ok) throw new Error(`Couldn't search for alternatives (${res.status})`);
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = json.choices?.[0]?.message?.content?.trim() ?? "{}";
+  let parsed: { intent?: string; candidates?: AlternativeCandidate[] } = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+    }
+  }
+  const candidates = (parsed.candidates ?? [])
+    .filter((c) => c && typeof c.name === "string" && c.name.trim())
+    .slice(0, 8)
+    .map((c) => ({
+      name: c.name.trim(),
+      brand: c.brand?.toString().trim() || null,
+      why_similar: (Array.isArray(c.why_similar) ? c.why_similar : []).map(String).slice(0, 3),
+    }));
+  return { intent: parsed.intent?.toString() ?? "", candidates };
+}

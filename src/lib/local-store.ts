@@ -87,3 +87,24 @@ export function applyTheme(theme: "light" | "dark" | "system") {
       : theme;
   root.classList.toggle("dark", resolved === "dark");
 }
+
+const DIET_KEY = "vegseal.diet";
+export type DietPreference = "vegan" | "vegetarian";
+
+export function getDietPreference(): DietPreference {
+  if (typeof window === "undefined") return "vegan";
+  return localStorage.getItem(DIET_KEY) === "vegetarian" ? "vegetarian" : "vegan";
+}
+
+export function setDietPreference(p: DietPreference) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(DIET_KEY, p);
+}
+
+/** Whether a product's status gives a reason to look for alternatives. */
+export function needsAlternative(
+  status: HistoryItem["status"],
+  pref: DietPreference,
+): boolean {
+  return pref === "vegan" ? status !== "vegan" : status === "not_vegetarian" || status === "unknown";
+}
