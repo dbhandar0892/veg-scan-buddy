@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { StatusPill } from "@/components/Status";
-import { getFavorites, type HistoryItem } from "@/lib/local-store";
+import { getFavorites, syncFavorites, type HistoryItem } from "@/lib/local-store";
 
 export const Route = createFileRoute("/favorites")({
   component: FavoritesPage,
@@ -14,6 +14,7 @@ function FavoritesPage() {
   useEffect(() => {
     const load = () => setItems(getFavorites());
     load();
+    void syncFavorites();
     window.addEventListener("vegseal:favorites", load);
     return () => window.removeEventListener("vegseal:favorites", load);
   }, []);
