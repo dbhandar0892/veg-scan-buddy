@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Heart, Info, Leaf, MapPin, ScanLine, Sparkles, X } from "lucide-react";
+import { Check, Heart, Info, Leaf, Loader2, MapPin, ScanLine, Sparkles, X } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { StatusPill } from "@/components/Status";
 import { StorePicker } from "@/components/StorePicker";
