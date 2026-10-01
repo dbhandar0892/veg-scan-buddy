@@ -1,11 +1,17 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Heart, Share2, Users } from "lucide-react";
+import { ArrowLeft, Check, Heart, Leaf, Share2, Users } from "lucide-react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { StatusHero } from "@/components/Status";
 import { getProduct, type AnalyzedProduct } from "@/lib/vegseal.functions";
-import { isFavorite, toggleFavorite } from "@/lib/local-store";
+import {
+  getDietPreference,
+  isFavorite,
+  needsAlternative,
+  toggleFavorite,
+  type DietPreference,
+} from "@/lib/local-store";
 import { hapticForStatus, hapticTap, shareContent } from "@/lib/native";
 
 
@@ -40,6 +46,8 @@ function ResultPage() {
   const navigate = useNavigate();
   const [fav, setFav] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [diet, setDiet] = useState<DietPreference>("vegan");
+  useEffect(() => setDiet(getDietPreference()), []);
   useEffect(() => setFav(isFavorite(product.id)), [product.id]);
   useEffect(() => hapticForStatus(product.status), [product.id, product.status]);
 
@@ -140,6 +148,21 @@ function ResultPage() {
 
 
 
+
+        {needsAlternative(product.status, diet) ? (
+          <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">
+              Looking for something similar? Let VegSeal find options that match your preference.
+            </p>
+            <Link
+              to="/alternatives/$id"
+              params={{ id: product.id }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+            >
+              <Leaf className="size-4" /> Find {diet === "vegan" ? "Vegan" : "Vegetarian"} Alternatives
+            </Link>
+          </div>
+        ) : null}
 
         {product.ingredients_text ? (
           <details className="mt-6 rounded-2xl border border-border bg-card p-4">

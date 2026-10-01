@@ -1108,3 +1108,109 @@ export async function listIngredientsCore() {
 export const listIngredients = createServerFn({ method: "GET" }).handler(async () =>
   listIngredientsCore(),
 );
+
+// -------- Find Alternatives --------
+// Stage 1: AI proposes similar products (no dietary claims).
+// Stage 2: every candidate goes through the SAME scan pipeline as a real scan;
+// only candidates whose verified status satisfies the preference are shown.
+export type DietPreference = "vegan" | "vegetarian";
+
+export interface AlternativeResult {
+  product: AnalyzedProduct;
+  why_similar: string[];
+}
+
+export interface AlternativesResponse {
+  intent: string;
+  verified: AlternativeResult[];
+  unverified: Array<{ name: string; brand: string | null; why_similar: string[] }>;
+}
+
+function meetsPreference(status: Status, pref: DietPreference): boolean {
+  return pref === "vegan" ? status === "vegan" : status === "vegan" || status === "vegetarian";
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]).catch(() => null);
+}
+
+async function verifyCandidate(c: { name: string; brand: string | null }): Promise<AnalyzedProduct | null> {
+  const query = [c.brand, c.name].filter(Boolean).join(" ").slice(0, 120);
+  const search = await searchProductsCore({ query }).catch(() => null);
+  const lname = c.name.toLowerCase();
+  const local = search?.local.find((p) => p.name.toLowerCase().includes(lname) || lname.includes(p.name.toLowerCase()));
+  if (local) {
+    const row = await getProductCore({ id: local.id });
+    if (row) return refreshIfUncertain(row);
+  }
+  const remote = search?.remote[0];
+  if (remote) {
+    const p = await lookupBarcodeCore({ barcode: remote.barcode }).catch(() => null);
+    if (p) return p;
+  }
+  const { findIngredientsOnWeb } = await import("./learn.server");
+  const found = await findIngredientsOnWeb({ brand: c.brand, productName: c.name });
+  if (!found) return null;
+  const analysis = await analyzeAndLearn(found.ingredients, { brand: c.brand, productName: c.name });
+  return upsertProduct(serverSupabase(), {
+    name: c.name,
+    brand: c.brand,
+    ingredients_text: found.ingredients,
+    analysis,
+    source: "web",
+  });
+}
+
+export async function findAlternativesCore(data: {
+  id: string;
+  preference: DietPreference;
+  priorities: string[];
+  note?: string;
+}): Promise<AlternativesResponse> {
+  const original = await getProductCore({ id: data.id });
+  if (!original) throw new Error("Original product not found");
+  const { discoverAlternatives } = await import("./learn.server");
+  const { intent, candidates } = await discoverAlternatives({
+    name: original.name,
+    brand: original.brand,
+    category: null,
+    ingredients: original.ingredients_text,
+    reason: original.explanation,
+    preference: data.preference,
+    priorities: data.priorities,
+    note: data.note?.trim() || null,
+  });
+
+  const checked = await Promise.all(
+    candidates.map(async (c) => ({ c, product: await withTimeout(verifyCandidate(c), 30_000) })),
+  );
+
+  const verified: AlternativeResult[] = [];
+  const unverified: AlternativesResponse["unverified"] = [];
+  const seen = new Set<string>([original.id]);
+  for (const { c, product } of checked) {
+    if (product && seen.has(product.id)) continue;
+    if (product && meetsPreference(product.status, data.preference)) {
+      seen.add(product.id);
+      verified.push({ product, why_similar: c.why_similar });
+    } else if (!product || product.status === "unknown") {
+      // Similar, but we couldn't confirm the ingredients — never labeled as a match.
+      unverified.push({ name: c.name, brand: c.brand, why_similar: c.why_similar });
+    }
+    // Products verified as NOT meeting the preference are dropped entirely.
+  }
+  return { intent, verified: verified.slice(0, 6), unverified: unverified.slice(0, 3) };
+}
+
+export const findAlternatives = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        preference: z.enum(["vegan", "vegetarian"]),
+        priorities: z.array(z.string().max(40)).max(6),
+        note: z.string().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => findAlternativesCore(data));

@@ -1,0 +1,338 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Heart, Info, Leaf, ScanLine, Sparkles, X } from "lucide-react";
+import { AppShell, PageHeader } from "@/components/AppShell";
+import { StatusPill } from "@/components/Status";
+import {
+  findAlternatives,
+  getProduct,
+  type AlternativeResult,
+  type AlternativesResponse,
+} from "@/lib/vegseal.functions";
+import {
+  getDietPreference,
+  isFavorite,
+  setDietPreference,
+  toggleFavorite,
+  type DietPreference,
+} from "@/lib/local-store";
+
+const productQuery = (id: string) =>
+  queryOptions({ queryKey: ["product", id], queryFn: () => getProduct({ data: { id } }) });
+
+export const Route = createFileRoute("/alternatives/$id")({
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(productQuery(params.id)),
+  head: () => ({
+    meta: [
+      { title: "Find Alternatives — VegSeal" },
+      { name: "description", content: "Find similar products verified to match your vegan or vegetarian preference." },
+      { property: "og:title", content: "Find Alternatives — VegSeal" },
+      { property: "og:description", content: "Similar products, independently verified as vegan or vegetarian." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: AlternativesPage,
+});
+
+const PRIORITIES = ["Similar product", "Similar flavor", "Similar price", "Healthier option", "Fewer ingredients"];
+
+function AlternativesPage() {
+  const { id } = Route.useParams();
+  const { data: original } = useSuspenseQuery(productQuery(id));
+  const run = useServerFn(findAlternatives);
+  const [pref, setPref] = useState<DietPreference>("vegan");
+  const [priorities, setPriorities] = useState<string[]>([]);
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<AlternativesResponse | null>(null);
+  const [showHow, setShowHow] = useState(false);
+  useEffect(() => setPref(getDietPreference()), []);
+
+  if (!original) {
+    return (
+      <AppShell>
+        <PageHeader back title="Find Alternatives" />
+        <p className="px-5 text-sm text-muted-foreground">This product isn't in our records anymore.</p>
+      </AppShell>
+    );
+  }
+
+  const prefLabel = pref === "vegan" ? "Vegan" : "Vegetarian";
+
+  const search = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      setResult(await run({ data: { id, preference: pref, priorities, note: note || undefined } }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = (p: string) =>
+    setPriorities((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+
+  const [best, ...others] = result?.verified ?? [];
+
+  return (
+    <AppShell>
+      <PageHeader back title={`Find ${prefLabel} Alternatives`} />
+      <div className="space-y-6 px-5 pb-10">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Similar to</p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+              {original.image_url ? <img src={original.image_url} alt="" className="size-full object-cover" /> : null}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground">{original.name}</p>
+              {original.brand ? <p className="truncate text-sm text-muted-foreground">{original.brand}</p> : null}
+            </div>
+            <StatusPill status={original.status} size="sm" />
+          </div>
+        </div>
+
+        {!result && !loading ? (
+          <>
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-foreground">My preference</h2>
+              <div className="grid grid-cols-2 gap-2">
+                {(["vegan", "vegetarian"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setPref(p);
+                      setDietPreference(p);
+                    }}
+                    className={[
+                      "rounded-2xl border p-3 text-sm font-medium capitalize",
+                      pref === p ? "border-primary bg-primary/5 text-foreground" : "border-border bg-card text-muted-foreground",
+                    ].join(" ")}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-foreground">What matters most? <span className="font-normal text-muted-foreground">(optional)</span></h2>
+              <div className="flex flex-wrap gap-2">
+                {PRIORITIES.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => toggle(p)}
+                    className={[
+                      "rounded-full border px-3.5 py-1.5 text-sm",
+                      priorities.includes(p) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
+                    ].join(" ")}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <label htmlFor="alt-note" className="mb-2 block text-sm font-semibold text-foreground">
+                Anything else you want? <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <input
+                id="alt-note"
+                value={note}
+                maxLength={300}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. something similar but spicy"
+                className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
+              />
+            </section>
+
+            {error ? <p className="text-sm text-danger">{error}</p> : null}
+
+            <button
+              onClick={search}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-medium text-primary-foreground shadow-soft"
+            >
+              <Leaf className="size-5" /> Find {prefLabel} Alternatives
+            </button>
+          </>
+        ) : null}
+
+        {loading ? (
+          <div className="rounded-2xl border border-border bg-card p-6 text-center">
+            <Sparkles className="mx-auto size-6 animate-pulse text-primary" />
+            <p className="mt-3 font-medium text-foreground">Finding similar products…</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              VegSeal checks every option's ingredients before showing it. This can take up to a minute.
+            </p>
+          </div>
+        ) : null}
+
+        {result ? (
+          <>
+            {result.intent ? (
+              <p className="text-sm text-muted-foreground">Looking for: <span className="text-foreground">{result.intent}</span></p>
+            ) : null}
+
+            {best ? (
+              <section>
+                <h2 className="mb-2 font-display text-2xl text-foreground">Best Match</h2>
+                <p className="mb-3 text-xs text-muted-foreground">Closest to what you scanned and what you asked for.</p>
+                <AltCard alt={best} pref={pref} featured originalName={original.name} originalExplanation={original.explanation} />
+              </section>
+            ) : (
+              <div className="rounded-2xl border border-border bg-card p-5 text-center">
+                <p className="font-medium text-foreground">We couldn't find a verified match yet.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We found similar products, but we couldn't confidently verify their ingredients for your preference.
+                </p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <Link to="/scan" className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                    Scan another product
+                  </Link>
+                  <button onClick={() => setResult(null)} className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground">
+                    Search again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {others.length ? (
+              <section>
+                <h2 className="mb-3 text-lg font-semibold text-foreground">More Options</h2>
+                <div className="space-y-3">
+                  {others.map((a) => (
+                    <AltCard key={a.product.id} alt={a} pref={pref} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {result.unverified.length ? (
+              <section>
+                <h2 className="mb-1 text-sm font-semibold text-foreground">We couldn't verify these yet</h2>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Similar products whose ingredients we couldn't fully confirm. We won't label them {prefLabel} without enough evidence — scan one in store to check.
+                </p>
+                <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+                  {result.unverified.map((u) => (
+                    <li key={`${u.brand}-${u.name}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-foreground">{u.name}</p>
+                        {u.brand ? <p className="truncate text-xs text-muted-foreground">{u.brand}</p> : null}
+                      </div>
+                      <span className="shrink-0 text-xs text-warn-foreground">Could not verify</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            <p className="text-center text-xs text-muted-foreground">Availability may vary by store.</p>
+
+            <button onClick={() => setShowHow((s) => !s)} className="mx-auto flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Info className="size-3.5" /> How VegSeal chose this
+            </button>
+            {showHow ? (
+              <p className="rounded-2xl bg-muted p-4 text-xs leading-relaxed text-muted-foreground">
+                VegSeal looked for products similar to the one you scanned and then independently checked their ingredients against your dietary preference. Similarity alone does not determine whether a product is Vegan or Vegetarian. No brand pays for placement.
+              </p>
+            ) : null}
+
+            {best ? (
+              <button onClick={() => setResult(null)} className="w-full rounded-2xl border border-border py-3 text-sm font-medium text-foreground">
+                Refine search
+              </button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    </AppShell>
+  );
+}
+
+function AltCard({
+  alt,
+  pref,
+  featured,
+  originalName,
+  originalExplanation,
+}: {
+  alt: AlternativeResult;
+  pref: DietPreference;
+  featured?: boolean;
+  originalName?: string;
+  originalExplanation?: string;
+}) {
+  const p = alt.product;
+  const [saved, setSaved] = useState(false);
+  useEffect(() => setSaved(isFavorite(p.id)), [p.id]);
+  const verifiedLabel = p.status === "vegan" ? "Vegan" : "Vegetarian";
+  return (
+    <div className={["rounded-2xl border bg-card p-4", featured ? "border-primary shadow-soft" : "border-border"].join(" ")}>
+      <Link to="/result/$id" params={{ id: p.id }} className="flex items-center gap-3">
+        <div className="size-14 shrink-0 overflow-hidden rounded-xl bg-muted">
+          {p.image_url ? <img src={p.image_url} alt="" className="size-full object-cover" /> : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-foreground">{p.name}</p>
+          {p.brand ? <p className="truncate text-sm text-muted-foreground">{p.brand}</p> : null}
+          <div className="mt-1"><StatusPill status={p.status} size="sm" /></div>
+        </div>
+      </Link>
+      {pref === "vegetarian" && p.status === "vegan" ? (
+        <p className="mt-2 text-xs text-muted-foreground">Also suitable for vegetarians.</p>
+      ) : null}
+
+      {alt.why_similar.length ? (
+        <div className="mt-3">
+          <p className="text-xs font-semibold text-foreground">Why it's similar</p>
+          <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+            {alt.why_similar.map((w) => <li key={w}>• {w}</li>)}
+          </ul>
+        </div>
+      ) : null}
+
+      {featured ? (
+        <>
+          <div className="mt-3">
+            <p className="text-xs font-semibold text-foreground">Why it fits your preference</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              VegSeal verified this product as {verifiedLabel} based on the available ingredient information.
+            </p>
+          </div>
+          {originalName ? (
+            <div className="mt-3 rounded-xl bg-muted p-3 text-sm">
+              <p className="text-xs font-semibold text-foreground">What's different?</p>
+              <p className="mt-1 flex items-start gap-1.5 text-muted-foreground"><X className="mt-0.5 size-3.5 shrink-0 text-danger" /> {originalName}: {originalExplanation}</p>
+              <p className="mt-1 flex items-start gap-1.5 text-muted-foreground"><Leaf className="mt-0.5 size-3.5 shrink-0 text-vegan" /> {p.name}: {p.explanation}</p>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={() =>
+            setSaved(
+              toggleFavorite({ id: p.id, barcode: p.barcode, name: p.name, brand: p.brand, image_url: p.image_url, status: p.status, scannedAt: Date.now() }),
+            )
+          }
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground"
+        >
+          <Heart className={["size-4", saved ? "fill-danger text-danger" : ""].join(" ")} /> {saved ? "Saved" : "Save"}
+        </button>
+        <Link to="/scan" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground">
+          <ScanLine className="size-4" /> Scan This Product
+        </Link>
+      </div>
+    </div>
+  );
+}
