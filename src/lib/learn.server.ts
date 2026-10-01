@@ -547,7 +547,7 @@ Your job is ONLY candidate discovery. Do not claim any product is vegan or veget
 Suggest products that are likely to suit a ${ctx.preference} diet and are similar in category, format, flavor and use. Prefer well-known brands with widely published ingredient lists. Never suggest the scanned product itself. Never invent products.
 Return ONLY JSON: {"intent": string, "candidates":[{"name": string, "brand": string, "why_similar": string[]}]}
 - intent: one sentence, what the shopper probably wants (e.g. "A crunchy cheddar-style cracker that is vegan").
-- candidates: 8 items, best match first. name = exact product name as sold, brand = brand name.
+- candidates: 6 items, best match first. name = exact product name as sold, brand = brand name.
 - why_similar: 2-3 short phrases (under 7 words each) about similarity only (category, flavor, texture, price). No dietary claims.`;
   const user = `Scanned product: ${ctx.name}${ctx.brand ? ` by ${ctx.brand}` : ""}
 Category: ${ctx.category ?? "unknown"}
@@ -567,7 +567,7 @@ Extra request: ${ctx.note || "none"}`;
         { role: "user", content: user },
       ],
     },
-    40_000,
+    25_000,
   );
   if (res.status === 429) throw new Error("VegSeal is busy right now. Please try again in a moment.");
   if (res.status === 402) throw new Error("AI credits are used up. Please try again later.");
@@ -585,7 +585,7 @@ Extra request: ${ctx.note || "none"}`;
   }
   const candidates = (parsed.candidates ?? [])
     .filter((c) => c && typeof c.name === "string" && c.name.trim())
-    .slice(0, 8)
+    .slice(0, 6)
     .map((c) => ({
       name: c.name.trim(),
       brand: c.brand?.toString().trim() || null,
