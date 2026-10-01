@@ -42,6 +42,7 @@ export const Route = createFileRoute("/alternatives/$id")({
 });
 
 const PRIORITIES = ["Similar product", "Similar flavor", "Similar price", "Healthier option", "Fewer ingredients"];
+const STEPS = ["Finding similar products", "Reading ingredient lists", "Checking every ingredient", "Verifying with trusted sources"];
 
 function AlternativesPage() {
   const { id } = Route.useParams();
@@ -51,6 +52,7 @@ function AlternativesPage() {
   const [priorities, setPriorities] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
@@ -62,6 +64,14 @@ function AlternativesPage() {
     setPref(getDietPreference());
     setStore(getShoppingStore());
   }, []);
+  useEffect(() => {
+    if (!loading) {
+      setStep(0);
+      return;
+    }
+    const t = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 7000);
+    return () => clearInterval(t);
+  }, [loading]);
   const changeStore = (s: string | null) => {
     setStore(s);
     setShoppingStore(s);
@@ -206,12 +216,42 @@ function AlternativesPage() {
         ) : null}
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-center">
-            <Sparkles className="mx-auto size-6 animate-pulse text-primary" />
-            <p className="mt-3 font-medium text-foreground">Finding similar products…</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              VegSeal checks every option's ingredients before showing it. This can take up to a minute.
-            </p>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <span className="absolute inset-0 animate-ping rounded-full bg-primary/15" />
+                <Sparkles className="relative size-5 animate-pulse text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Finding alternatives…</p>
+                <p className="text-sm text-muted-foreground">This usually takes 20–40 seconds.</p>
+              </div>
+            </div>
+            <div className="relative mt-5 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="alt-progress h-full rounded-full bg-primary" />
+              <div className="alt-sheen absolute inset-y-0 left-0 w-1/4 rounded-full bg-foreground/10 blur-sm" />
+            </div>
+            <ul className="mt-5 space-y-2.5">
+              {STEPS.map((label, i) => (
+                <li
+                  key={label}
+                  className={[
+                    "flex items-center gap-2.5 text-sm transition-colors duration-500",
+                    i <= step ? "text-foreground" : "text-muted-foreground/50",
+                  ].join(" ")}
+                >
+                  {i < step ? (
+                    <Check className="size-4 shrink-0 text-primary" />
+                  ) : i === step ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+                  ) : (
+                    <span className="mx-auto size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+                  )}
+                  {label}
+                  {i === step ? "…" : ""}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
 
