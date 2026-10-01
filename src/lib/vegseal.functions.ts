@@ -1143,13 +1143,17 @@ async function verifyCandidate(c: { name: string; brand: string | null }): Promi
     const row = await getProductCore({ id: local.id });
     if (row) return refreshIfUncertain(row);
   }
+  // Look up the barcode match and research the web at the same time —
+  // whichever confirms the product first wins, instead of waiting in line.
   const remote = search?.remote[0];
-  if (remote) {
-    const p = await lookupBarcodeCore({ barcode: remote.barcode }).catch(() => null);
-    if (p) return p;
-  }
-  const { findIngredientsOnWeb } = await import("./learn.server");
-  const found = await findIngredientsOnWeb({ brand: c.brand, productName: c.name });
+  const barcodePromise = remote
+    ? lookupBarcodeCore({ barcode: remote.barcode }).catch(() => null)
+    : Promise.resolve(null);
+  const webPromise = import("./learn.server").then(({ findIngredientsOnWeb }) =>
+    findIngredientsOnWeb({ brand: c.brand, productName: c.name }).catch(() => null),
+  );
+  const [viaBarcode, found] = await Promise.all([barcodePromise, webPromise]);
+  if (viaBarcode) return viaBarcode;
   if (!found) return null;
   const analysis = await analyzeAndLearn(found.ingredients, { brand: c.brand, productName: c.name });
   return upsertProduct(serverSupabase(), {
@@ -1182,7 +1186,7 @@ export async function findAlternativesCore(data: {
   });
 
   const checked = await Promise.all(
-    candidates.map(async (c) => ({ c, product: await withTimeout(verifyCandidate(c), 30_000) })),
+    candidates.map(async (c) => ({ c, product: await withTimeout(verifyCandidate(c), 20_000) })),
   );
 
   const verified: AlternativeResult[] = [];
