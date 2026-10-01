@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Heart, Info, Leaf, ScanLine, Sparkles, X } from "lucide-react";
+import { Heart, Info, Leaf, MapPin, ScanLine, Sparkles, X } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { StatusPill } from "@/components/Status";
+import { StorePicker } from "@/components/StorePicker";
+import { checkRetailer } from "@/lib/retailers.functions";
 import {
   findAlternatives,
   getProduct,
@@ -13,7 +15,9 @@ import {
 } from "@/lib/vegseal.functions";
 import {
   getDietPreference,
+  getShoppingStore,
   isFavorite,
+  setShoppingStore,
   setDietPreference,
   toggleFavorite,
   type DietPreference,
@@ -50,7 +54,33 @@ function AlternativesPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
-  useEffect(() => setPref(getDietPreference()), []);
+  const [store, setStore] = useState<string | null>(null);
+  const [carried, setCarried] = useState<Set<string>>(new Set());
+  const checkStore = useServerFn(checkRetailer);
+  useEffect(() => {
+    setPref(getDietPreference());
+    setStore(getShoppingStore());
+  }, []);
+  const changeStore = (s: string | null) => {
+    setStore(s);
+    setShoppingStore(s);
+  };
+
+  // Retailer association is looked up separately from dietary verification.
+  useEffect(() => {
+    setCarried(new Set());
+    const barcodes = (result?.verified ?? []).map((a) => a.product.barcode).filter((b): b is string => !!b);
+    if (!store || !barcodes.length) return;
+    let cancelled = false;
+    checkStore({ data: { store, barcodes } })
+      .then((rows) => {
+        if (!cancelled) setCarried(new Set(rows.filter((r) => r.carried).map((r) => r.barcode)));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [store, result, checkStore]);
 
   if (!original) {
     return (
@@ -80,6 +110,9 @@ function AlternativesPage() {
     setPriorities((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
   const [best, ...others] = result?.verified ?? [];
+  const atStore = store ? (result?.verified ?? []).filter((a) => a.product.barcode && carried.has(a.product.barcode)) : [];
+  const atStoreIds = new Set(atStore.map((a) => a.product.id));
+  const moreOptions = others.filter((a) => !atStoreIds.has(a.product.id));
 
   return (
     <AppShell>
@@ -98,6 +131,8 @@ function AlternativesPage() {
             <StatusPill status={original.status} size="sm" />
           </div>
         </div>
+
+        <StorePicker store={store} onChange={changeStore} />
 
         {!result && !loading ? (
           <>
@@ -181,11 +216,25 @@ function AlternativesPage() {
               <p className="text-sm text-muted-foreground">Looking for: <span className="text-foreground">{result.intent}</span></p>
             ) : null}
 
+            {atStore.length ? (
+              <section>
+                <h2 className="mb-1 font-display text-2xl text-foreground">Products You May Find at This Store</h2>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Listed as carried by {store}. Availability may vary by location and inventory.
+                </p>
+                <div className="space-y-3">
+                  {atStore.map((a) => (
+                    <AltCard key={a.product.id} alt={a} pref={pref} store={store} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {best ? (
               <section>
                 <h2 className="mb-2 font-display text-2xl text-foreground">Best Match</h2>
                 <p className="mb-3 text-xs text-muted-foreground">Closest to what you scanned and what you asked for.</p>
-                <AltCard alt={best} pref={pref} featured originalName={original.name} originalExplanation={original.explanation} />
+                <AltCard alt={best} pref={pref} store={best.product.barcode && carried.has(best.product.barcode) ? store : null} featured originalName={original.name} originalExplanation={original.explanation} />
               </section>
             ) : (
               <div className="rounded-2xl border border-border bg-card p-5 text-center">
@@ -204,11 +253,13 @@ function AlternativesPage() {
               </div>
             )}
 
-            {others.length ? (
+            {moreOptions.length ? (
               <section>
-                <h2 className="mb-3 text-lg font-semibold text-foreground">More Options</h2>
+                <h2 className="mb-3 text-lg font-semibold text-foreground">
+                  {atStore.length ? `More ${prefLabel} Alternatives` : "More Options"}
+                </h2>
                 <div className="space-y-3">
-                  {others.map((a) => (
+                  {moreOptions.map((a) => (
                     <AltCard key={a.product.id} alt={a} pref={pref} />
                   ))}
                 </div>
@@ -264,7 +315,9 @@ function AltCard({
   featured,
   originalName,
   originalExplanation,
+  store,
 }: {
+  store?: string | null;
   alt: AlternativeResult;
   pref: DietPreference;
   featured?: boolean;
@@ -287,6 +340,11 @@ function AltCard({
           <div className="mt-1"><StatusPill status={p.status} size="sm" /></div>
         </div>
       </Link>
+      {store ? (
+        <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <MapPin className="size-3 text-primary" /> You may find this at {store}
+        </p>
+      ) : null}
       {pref === "vegetarian" && p.status === "vegan" ? (
         <p className="mt-2 text-xs text-muted-foreground">Also suitable for vegetarians.</p>
       ) : null}
