@@ -15,6 +15,17 @@ const COMMON = [
   "Trader Joe's",
   "Costco",
   "Aldi",
+  "BJ's Wholesale Club",
+  "Sam's Club",
+  "Safeway",
+  "Albertsons",
+  "H-E-B",
+  "Meijer",
+  "Food Lion",
+  "Giant",
+  "Hannaford",
+  "Sprouts",
+  "Lidl",
 ];
 
 export function StorePicker({
@@ -66,8 +77,10 @@ export function StorePicker({
     );
   };
 
-  const q = query.trim().toLowerCase();
-  const options = (nearby?.length ? nearby : COMMON).filter((s) => !q || s.toLowerCase().includes(q));
+  const simplify = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const q = simplify(query);
+  const pool = nearby?.length ? [...nearby, ...COMMON.filter((c) => !nearby.includes(c))] : COMMON;
+  const options = pool.filter((s) => !q || simplify(s).includes(q));
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
@@ -110,8 +123,16 @@ export function StorePicker({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && pick(query)}
               placeholder="Search for a store"
-              className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-16 text-sm text-foreground outline-none focus:border-primary"
             />
+            {query.trim() ? (
+              <button
+                onClick={() => pick(options.length === 1 ? options[0] : query)}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+              >
+                Select
+              </button>
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">{nearby?.length ? "Nearby stores" : "Common stores"}</p>
           <div className="flex flex-wrap gap-2">
@@ -127,7 +148,7 @@ export function StorePicker({
                 {s}
               </button>
             ))}
-            {q && !options.some((s) => s.toLowerCase() === q) ? (
+            {q && !options.some((s) => simplify(s) === q) ? (
               <button onClick={() => pick(query)} className="rounded-full border border-dashed border-border px-3 py-1.5 text-sm text-foreground">
                 Use "{query.trim()}"
               </button>

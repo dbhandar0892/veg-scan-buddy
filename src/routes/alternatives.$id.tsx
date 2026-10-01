@@ -230,6 +230,12 @@ function AlternativesPage() {
               </section>
             ) : null}
 
+            {store && !atStore.length && result.verified.length ? (
+              <p className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
+                We don't have store listings showing these products at {store} yet, so they're shown as general alternatives. They may still be sold there — scan to check when you find one.
+              </p>
+            ) : null}
+
             {best ? (
               <section>
                 <h2 className="mb-2 font-display text-2xl text-foreground">Best Match</h2>
