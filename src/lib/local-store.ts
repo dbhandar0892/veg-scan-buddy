@@ -108,3 +108,21 @@ export function needsAlternative(
 ): boolean {
   return pref === "vegan" ? status !== "vegan" : status === "not_vegetarian" || status === "unknown";
 }
+
+// "Where I'm shopping right now" — remembered for one shopping session (4h),
+// so the user isn't asked again for every scan but isn't locked in forever.
+const STORE_KEY = "vegseal.shoppingStore";
+const STORE_SESSION_MS = 4 * 60 * 60 * 1000;
+
+export function getShoppingStore(): string | null {
+  if (typeof window === "undefined") return null;
+  const v = safeParse<{ name: string; at: number } | null>(localStorage.getItem(STORE_KEY), null);
+  if (!v || Date.now() - v.at > STORE_SESSION_MS) return null;
+  return v.name;
+}
+
+export function setShoppingStore(name: string | null) {
+  if (typeof window === "undefined") return;
+  if (name) localStorage.setItem(STORE_KEY, JSON.stringify({ name, at: Date.now() }));
+  else localStorage.removeItem(STORE_KEY);
+}
