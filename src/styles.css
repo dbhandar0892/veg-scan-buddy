@@ -136,3 +136,21 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Alternatives search progress: bar eases toward done, sheen keeps it alive */
+@keyframes alt-progress {
+  0% { width: 6%; }
+  60% { width: 55%; }
+  85% { width: 82%; }
+  100% { width: 94%; }
+}
+@keyframes alt-sheen {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+.alt-progress {
+  animation: alt-progress 45s cubic-bezier(0.25, 0.6, 0.4, 1) forwards;
+}
+.alt-sheen {
+  animation: alt-sheen 1.8s ease-in-out infinite;
+}
