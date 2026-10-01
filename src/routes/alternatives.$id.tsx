@@ -245,7 +245,7 @@ function AlternativesPage() {
                   ) : i === step ? (
                     <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
                   ) : (
-                    <span className="mx-auto size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+                    <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
                   )}
                   {label}
                   {i === step ? "…" : ""}
