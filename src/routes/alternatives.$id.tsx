@@ -54,6 +54,7 @@ function AlternativesPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
+  const [searchedStore, setSearchedStore] = useState<string | null>(null);
   const [store, setStore] = useState<string | null>(null);
   const [carried, setCarried] = useState<Set<string>>(new Set());
   const checkStore = useServerFn(checkRetailer);
@@ -74,7 +75,7 @@ function AlternativesPage() {
     let cancelled = false;
     checkStore({ data: { store, barcodes } })
       .then((rows) => {
-        if (!cancelled) setCarried(new Set([...(result?.storeBarcodes ?? []), ...rows.filter((r) => r.carried).map((r) => r.barcode)]));
+        if (!cancelled) setCarried(new Set([...(searchedStore === store ? (result?.storeBarcodes ?? []) : []), ...rows.filter((r) => r.carried).map((r) => r.barcode)]));
       })
       .catch(() => {});
     return () => {
@@ -98,6 +99,7 @@ function AlternativesPage() {
     setError(null);
     setResult(null);
     try {
+      setSearchedStore(store);
       setResult(await run({ data: { id, preference: pref, priorities, note: note || undefined, store: store || undefined } }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -109,9 +111,9 @@ function AlternativesPage() {
   const toggle = (p: string) =>
     setPriorities((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
-  const storeSet = new Set(result?.storeBarcodes ?? []);
+  const storeSet = new Set(searchedStore === store ? (result?.storeBarcodes ?? []) : []);
   // Store-only finds are shown in the store section, not as Best Match.
-  const general = (result?.verified ?? []).filter((a) => !a.product.barcode || !storeSet.has(a.product.barcode) || carried.has(a.product.barcode) && !storeSet.has(a.product.barcode));
+  const general = (result?.verified ?? []).filter((a) => !a.product.barcode || !storeSet.has(a.product.barcode));
   const [best, ...others] = general.length ? general : (result?.verified ?? []);
   const atStore = store ? (result?.verified ?? []).filter((a) => a.product.barcode && carried.has(a.product.barcode)) : [];
   const atStoreIds = new Set(atStore.map((a) => a.product.id));
