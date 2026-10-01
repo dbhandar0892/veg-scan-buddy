@@ -1124,6 +1124,46 @@ export interface AlternativesResponse {
   intent: string;
   verified: AlternativeResult[];
   unverified: Array<{ name: string; brand: string | null; why_similar: string[] }>;
+  /** Barcodes Open Food Facts lists as sold at the chosen store. */
+  storeBarcodes: string[];
+}
+
+// Find products Open Food Facts lists at the chosen store, in the same category
+// as the scanned product. Each is then verified by the normal ingredient check.
+async function storeCandidates(
+  originalBarcode: string | null,
+  store: string,
+  pref: DietPreference,
+): Promise<string[]> {
+  const { storeTagSlugs, storeListed } = await import("./stores");
+  const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
+  const get = async (url: string) => {
+    const r = await withTimeout(fetch(url, { headers }).then((x) => (x.ok ? x.json() : null)), 6000);
+    return r as Record<string, unknown> | null;
+  };
+  let cats: string[] = [];
+  if (originalBarcode) {
+    const j = await get(
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(originalBarcode)}?fields=categories_tags`,
+    );
+    cats = ((j?.product as { categories_tags?: string[] } | undefined)?.categories_tags ?? []).slice(-2).reverse();
+  }
+  if (!cats.length) return [];
+  const label = pref === "vegan" ? "en:vegan" : "en:vegetarian";
+  for (const cat of cats) {
+    for (const tag of storeTagSlugs(store)) {
+      const j = await get(
+        `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(cat)}&stores_tags=${encodeURIComponent(tag)}&labels_tags=${label}&fields=code,stores,stores_tags&page_size=8`,
+      );
+      const prods = (j?.products as { code?: string; stores?: string; stores_tags?: string[] }[] | undefined) ?? [];
+      const codes = prods
+        .filter((p) => p.code && storeListed([...(p.stores_tags ?? []), ...(p.stores ?? "").split(",")], store))
+        .map((p) => p.code!)
+        .filter((c) => c !== originalBarcode);
+      if (codes.length) return codes.slice(0, 4);
+    }
+  }
+  return [];
 }
 
 function meetsPreference(status: Status, pref: DietPreference): boolean {
@@ -1170,6 +1210,7 @@ export async function findAlternativesCore(data: {
   preference: DietPreference;
   priorities: string[];
   note?: string;
+  store?: string;
 }): Promise<AlternativesResponse> {
   const original = await getProductCore({ id: data.id });
   if (!original) throw new Error("Original product not found");
@@ -1185,9 +1226,18 @@ export async function findAlternativesCore(data: {
     note: data.note?.trim() || null,
   });
 
-  const checked = await Promise.all(
-    candidates.map(async (c) => ({ c, product: await withTimeout(verifyCandidate(c), 20_000) })),
-  );
+  const storePromise = data.store
+    ? withTimeout(
+        storeCandidates(original.barcode, data.store, data.preference).then((codes) =>
+          Promise.all(codes.map((b) => withTimeout(lookupBarcodeCore({ barcode: b }), 15_000))),
+        ),
+        25_000,
+      )
+    : Promise.resolve(null);
+  const [checked, storeFound] = await Promise.all([
+    Promise.all(candidates.map(async (c) => ({ c, product: await withTimeout(verifyCandidate(c), 20_000) }))),
+    storePromise,
+  ]);
 
   const verified: AlternativeResult[] = [];
   const unverified: AlternativesResponse["unverified"] = [];
@@ -1203,7 +1253,20 @@ export async function findAlternativesCore(data: {
     }
     // Products verified as NOT meeting the preference are dropped entirely.
   }
-  return { intent, verified: verified.slice(0, 6), unverified: unverified.slice(0, 3) };
+  const storeBarcodes: string[] = [];
+  const storeResults: AlternativeResult[] = [];
+  for (const p of storeFound ?? []) {
+    if (!p || !p.barcode || seen.has(p.id) || !meetsPreference(p.status, data.preference)) continue;
+    seen.add(p.id);
+    storeBarcodes.push(p.barcode);
+    storeResults.push({ product: p, why_similar: [`Same kind of product, listed at ${data.store}`] });
+  }
+  return {
+    intent,
+    verified: [...verified.slice(0, 6), ...storeResults.slice(0, 3)],
+    unverified: unverified.slice(0, 3),
+    storeBarcodes,
+  };
 }
 
 export const findAlternatives = createServerFn({ method: "POST" })
@@ -1214,6 +1277,7 @@ export const findAlternatives = createServerFn({ method: "POST" })
         preference: z.enum(["vegan", "vegetarian"]),
         priorities: z.array(z.string().max(40)).max(6),
         note: z.string().max(300).optional(),
+        store: z.string().max(80).optional(),
       })
       .parse(input),
   )
