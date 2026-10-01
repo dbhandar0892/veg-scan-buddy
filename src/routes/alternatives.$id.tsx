@@ -116,7 +116,7 @@ function AlternativesPage() {
 
   return (
     <AppShell>
-      <PageHeader back title={`Find ${prefLabel} Alternatives`} />
+      <PageHeader back title="Find Vegan/Vegetarian Alternatives" />
       <div className="space-y-6 px-5 pb-10">
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Similar to</p>
@@ -195,7 +195,7 @@ function AlternativesPage() {
               onClick={search}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-medium text-primary-foreground shadow-soft"
             >
-              <Leaf className="size-5" /> Find {prefLabel} Alternatives
+              <Leaf className="size-5" /> Find Vegan/Vegetarian Alternatives
             </button>
           </>
         ) : null}
