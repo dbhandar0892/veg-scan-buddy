@@ -149,6 +149,21 @@ function ResultPage() {
 
 
 
+        {needsAlternative(product.status, diet) ? (
+          <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">
+              Looking for something similar? Let VegSeal find options that match your preference.
+            </p>
+            <Link
+              to="/alternatives/$id"
+              params={{ id: product.id }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+            >
+              <Leaf className="size-4" /> Find {diet === "vegan" ? "Vegan" : "Vegetarian"} Alternatives
+            </Link>
+          </div>
+        ) : null}
+
         {product.ingredients_text ? (
           <details className="mt-6 rounded-2xl border border-border bg-card p-4">
             <summary className="cursor-pointer text-sm font-medium text-foreground">
