@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      favorites: {
+        Row: {
+          created_at: string
+          item: Json
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item: Json
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item?: Json
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           aliases: string[]

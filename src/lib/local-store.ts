@@ -59,14 +59,67 @@ export function isFavorite(id: string): boolean {
   return getFavorites().some((f) => f.id === id);
 }
 
+function writeFavorites(list: HistoryItem[]) {
+  localStorage.setItem(FAV_KEY, JSON.stringify(list));
+  window.dispatchEvent(new Event("vegseal:favorites"));
+}
+
+async function signedInClient() {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.auth.getSession();
+  const uid = data.session?.user.id;
+  return uid ? { supabase, uid } : null;
+}
+
 export function toggleFavorite(item: HistoryItem): boolean {
   if (typeof window === "undefined") return false;
   const all = getFavorites();
   const exists = all.some((f) => f.id === item.id);
   const next = exists ? all.filter((f) => f.id !== item.id) : [item, ...all];
-  localStorage.setItem(FAV_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event("vegseal:favorites"));
+  writeFavorites(next);
+  // Save to the user's account so favorites survive app restarts and other devices.
+  void (async () => {
+    try {
+      const c = await signedInClient();
+      if (!c) return;
+      if (exists) {
+        await c.supabase.from("favorites").delete().eq("user_id", c.uid).eq("product_id", item.id);
+      } else {
+        await c.supabase
+          .from("favorites")
+          .upsert({ user_id: c.uid, product_id: item.id, item: item as never });
+      }
+    } catch (e) {
+      console.warn("favorite sync failed", e);
+    }
+  })();
   return !exists;
+}
+
+/** Merge account favorites with this device's, uploading any device-only ones. */
+export async function syncFavorites(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const c = await signedInClient();
+    if (!c) return;
+    const { data, error } = await c.supabase
+      .from("favorites")
+      .select("product_id,item,created_at")
+      .eq("user_id", c.uid)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const remote = (data ?? []).map((r) => r.item as unknown as HistoryItem);
+    const remoteIds = new Set(remote.map((r) => r.id));
+    const localOnly = getFavorites().filter((f) => !remoteIds.has(f.id));
+    if (localOnly.length) {
+      await c.supabase.from("favorites").upsert(
+        localOnly.map((f) => ({ user_id: c.uid, product_id: f.id, item: f as never })),
+      );
+    }
+    writeFavorites([...localOnly, ...remote]);
+  } catch (e) {
+    console.warn("favorite sync failed", e);
+  }
 }
 
 export function getTheme(): "light" | "dark" | "system" {
