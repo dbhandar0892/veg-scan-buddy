@@ -8,11 +8,16 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/Status";
 import { StorePicker } from "@/components/StorePicker";
 import {
-  findAlternatives,
+  discoverAlternativeCandidates,
   getProduct,
+  verifyAlternativeCandidate,
   type AlternativeResult,
   type AlternativesResponse,
 } from "@/lib/vegseal.functions";
+
+function meetsPref(status: string, pref: DietPreference) {
+  return pref === "vegan" ? status === "vegan" : status === "vegan" || status === "vegetarian";
+}
 import {
   getDietPreference,
   getShoppingStore,
@@ -47,7 +52,9 @@ const STEPS = ["Finding similar products", "Reading ingredient lists", "Checking
 function AlternativesPage() {
   const { id } = Route.useParams();
   const { data: original } = useSuspenseQuery(productQuery(id));
-  const run = useServerFn(findAlternatives);
+  const discover = useServerFn(discoverAlternativeCandidates);
+  const verify = useServerFn(verifyAlternativeCandidate);
+  const [checking, setChecking] = useState(false);
   const [pref, setPref] = useState<DietPreference>("vegan");
   const [priorities, setPriorities] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -87,15 +94,41 @@ function AlternativesPage() {
 
   const search = async () => {
     setLoading(true);
+    setChecking(false);
     setError(null);
     setResult(null);
     try {
       // The selected store is shopping context only; it never changes results.
-      setResult(await run({ data: { id, preference: pref, priorities, note: note || undefined } }));
+      const { intent, candidates } = await discover({
+        data: { id, preference: pref, priorities, note: note || undefined },
+      });
+      const found: Array<{ i: number; alt: AlternativeResult }> = [];
+      const seen = new Set<string>([id]);
+      const publish = () =>
+        setResult({
+          intent,
+          verified: [...found].sort((a, b) => a.i - b.i).map((f) => f.alt),
+          unverified: [],
+          storeBarcodes: [],
+        });
+      publish();
+      setLoading(false);
+      setChecking(true);
+      // Check every candidate at once; show each one the moment it passes.
+      await Promise.all(
+        candidates.map(async (c, i) => {
+          const product = await verify({ data: { name: c.name, brand: c.brand } }).catch(() => null);
+          if (!product || seen.has(product.id) || !meetsPref(product.status, pref)) return;
+          seen.add(product.id);
+          found.push({ i, alt: { product, why_similar: c.why_similar } });
+          publish();
+        }),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+      setChecking(false);
     }
   };
 
