@@ -2,12 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useId, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Heart, Info, Leaf, List, Loader2, MapPin, Sparkles, X } from "lucide-react";
+import { Check, Heart, Info, Leaf, List, Loader2, Sparkles, X } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/Status";
 import { StorePicker } from "@/components/StorePicker";
-import { checkRetailer } from "@/lib/retailers.functions";
 import {
   findAlternatives,
   getProduct,
