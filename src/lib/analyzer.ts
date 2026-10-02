@@ -303,6 +303,15 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// True when the ingredient text mentions egg in any common form. Used to flag
+// vegetarian results for vegetarians who also avoid eggs.
+const EGG_RE =
+  /\b(eggs?|egg\s*(white|yolk|powder)|albumen|albumin|ovalbumin|ovomucoid|lysozyme|mayonnaise|mayo|meringue|eggnog)\b/i;
+
+export function containsEgg(ingredientsText: string | null | undefined): boolean {
+  return !!ingredientsText && EGG_RE.test(ingredientsText);
+}
+
 
 export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
 

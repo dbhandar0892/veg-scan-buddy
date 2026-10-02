@@ -13,6 +13,7 @@ import {
   type DietPreference,
 } from "@/lib/local-store";
 import { hapticForStatus, hapticTap, shareContent } from "@/lib/native";
+import { containsEgg } from "@/lib/analyzer";
 
 
 const productQuery = (id: string) =>
@@ -132,6 +133,7 @@ function ResultPage() {
           <StatusHero
             status={product.status}
             explanation={product.explanation}
+            containsEgg={containsEgg(product.ingredients_text)}
           />
         </div>
 

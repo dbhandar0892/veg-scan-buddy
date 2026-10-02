@@ -90,18 +90,24 @@ const veganMap: Record<
 export function StatusHero({
   status,
   explanation,
+  containsEgg = false,
 }: {
   status: Status;
   explanation: string;
+  containsEgg?: boolean;
 }) {
   const m = map[status];
   const vm = veganMap[status];
+  const label =
+    status === "vegetarian" && containsEgg
+      ? "Vegetarian (contains egg)"
+      : m.label;
   return (
     <div className={["rounded-3xl p-6 shadow-soft ring-1", m.bg, m.ring].join(" ")}>
       <div className="flex flex-wrap items-center gap-2">
         <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", m.bg, m.fg, m.ring].join(" ")}>
           <span className={["size-2 rounded-full", m.dot].join(" ")} aria-hidden />
-          {m.label}
+          {label}
           {(status === "vegetarian" || status === "vegan") ? (
             <Check className="size-3.5 stroke-[3]" aria-hidden />
           ) : null}
