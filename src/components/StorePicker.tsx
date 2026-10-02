@@ -92,9 +92,7 @@ export function StorePicker({
               <MapPin className="size-3.5 shrink-0 text-primary" /> {store}
             </p>
           ) : (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Shopping somewhere specific? Choose the store to see alternatives you may find there.
-            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Let us know where you're shopping.</p>
           )}
         </div>
         <button
