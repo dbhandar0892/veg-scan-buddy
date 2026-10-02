@@ -251,7 +251,7 @@ function AlternativesPage() {
               </div>
               <div>
                 <p className="font-medium text-foreground">Finding alternatives…</p>
-                <p className="text-sm text-muted-foreground">This usually takes 20–40 seconds.</p>
+                <p className="text-sm text-muted-foreground">Matches start appearing in a few seconds.</p>
               </div>
             </div>
             <div className="relative mt-5 h-2 overflow-hidden rounded-full bg-muted">
