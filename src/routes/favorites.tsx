@@ -6,6 +6,14 @@ import { StatusPill } from "@/components/Status";
 import { getFavorites, syncFavorites, type HistoryItem } from "@/lib/local-store";
 
 export const Route = createFileRoute("/favorites")({
+  head: () => ({ meta: [
+    { title: "Favorite products | VegSeal" },
+    { name: "description", content: "View food products saved to your VegSeal favorites." },
+    { property: "og:title", content: "Favorite products | VegSeal" },
+    { property: "og:description", content: "View food products saved to your VegSeal favorites." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: FavoritesPage,
 });
 

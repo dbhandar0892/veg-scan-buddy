@@ -26,6 +26,14 @@ const productQuery = (id: string) =>
   });
 
 export const Route = createFileRoute("/result/$id")({
+  head: () => ({ meta: [
+    { title: "Product scan result | VegSeal" },
+    { name: "description", content: "See whether a scanned food product is vegan or vegetarian and read the ingredient explanation." },
+    { property: "og:title", content: "Product scan result | VegSeal" },
+    { property: "og:description", content: "See whether a scanned food product is vegan or vegetarian and read the ingredient explanation." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(productQuery(params.id)),
   component: ResultPage,
   notFoundComponent: () => (

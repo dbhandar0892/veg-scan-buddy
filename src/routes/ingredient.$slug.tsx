@@ -15,6 +15,14 @@ const ingredientQuery = (slug: string) =>
   });
 
 export const Route = createFileRoute("/ingredient/$slug")({
+  head: ({ params }) => ({ meta: [
+    { title: `Ingredient guide: ${params.slug.replace(/-/g, " ")} | VegSeal` },
+    { name: "description", content: "Learn whether this ingredient is vegan or vegetarian and where it comes from." },
+    { property: "og:title", content: `Ingredient guide: ${params.slug.replace(/-/g, " ")} | VegSeal` },
+    { property: "og:description", content: "Learn whether this ingredient is vegan or vegetarian and where it comes from." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(ingredientQuery(params.slug)),
   component: IngredientPage,
   notFoundComponent: () => (
