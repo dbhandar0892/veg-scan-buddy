@@ -108,6 +108,8 @@ function AlternativesPage() {
     <AppShell>
       <PageHeader back title="Find Vegan/Vegetarian Alternatives" />
       <div className="space-y-6 px-5 pb-10">
+        <p className="-mt-2 text-center text-xs text-muted-foreground">Availability may vary by location and inventory.</p>
+
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
           <div className="h-1.5 w-full bg-gradient-to-r from-primary/70 via-primary to-primary/70" />
           <div className="p-4">
