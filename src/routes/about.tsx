@@ -6,12 +6,14 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About VegSeal" },
-      { name: "description", content: "VegSeal is a trust-first vegan and vegetarian food scanner." },
+      { name: "description", content: "Check food ingredients with VegSeal and find similar vegan or vegetarian alternatives." },
       { property: "og:title", content: "About VegSeal" },
       {
         property: "og:description",
-        content: "A trust-first food scanner that answers one question: is this vegan or vegetarian?",
+        content: "Scan food, understand its ingredients, and find similar vegan or vegetarian alternatives.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AboutPage,
@@ -35,6 +37,11 @@ function AboutPage() {
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           We never guess. When an ingredient's origin is uncertain, we say so, so you can
           decide what's right for you.
+        </p>
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          If you want another option, you can find similar products that match your vegan
+          or vegetarian preference. We check each alternative's ingredients before showing it
+          as a match. Store selection is for your shopping context, not a promise of availability.
         </p>
         <p className="mt-6 text-sm text-muted-foreground">
           Product data comes from the open food community. Ingredient explanations are

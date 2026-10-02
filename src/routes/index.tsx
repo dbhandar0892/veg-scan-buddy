@@ -6,9 +6,9 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
     { title: "VegSeal | Check vegan and vegetarian foods" },
-    { name: "description", content: "Scan a barcode or ingredient label to check whether a product is vegan or vegetarian." },
+    { name: "description", content: "Scan a barcode or ingredient label to check if a product is vegan or vegetarian, then find similar alternatives that match your preference." },
     { property: "og:title", content: "VegSeal | Check vegan and vegetarian foods" },
-    { property: "og:description", content: "Scan a barcode or ingredient label to check whether a product is vegan or vegetarian." },
+    { property: "og:description", content: "Check ingredients and find similar vegan or vegetarian alternatives that match your preference." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
@@ -39,6 +39,9 @@ function HomePage() {
           <span className="font-bold">Find out if a product is vegan or vegetarian in seconds.</span>
           <br />
           <span className="italic">Backed by ingredient analysis and manufacturer research.</span>
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Need a different option? Find similar vegan or vegetarian alternatives after checking a product.
         </p>
       </div>
 

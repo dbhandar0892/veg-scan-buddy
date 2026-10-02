@@ -1,7 +1,7 @@
 {
   "name": "VegSeal — Vegan & Vegetarian Scanner",
   "short_name": "VegSeal",
-  "description": "Scan a barcode or ingredient label to instantly know if a product is vegan or vegetarian.",
+  "description": "Scan a barcode or ingredient label to check if a product is vegan or vegetarian, then find similar alternatives that match your preference.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

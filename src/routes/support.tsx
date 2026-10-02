@@ -9,13 +9,15 @@ export const Route = createFileRoute("/support")({
       {
         name: "description",
         content:
-          "Get help with VegSeal: scan accuracy, account and subscription questions, and how to reach our team.",
+          "Get help with VegSeal scans, vegan and vegetarian alternatives, your account, and subscriptions.",
       },
       { property: "og:title", content: "Help & Support — VegSeal" },
       {
         property: "og:description",
-        content: "Answers to common questions about VegSeal, plus how to contact our team.",
+        content: "Answers about scanning, finding alternatives, and your VegSeal account.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SupportPage,
@@ -46,6 +48,10 @@ function SupportPage() {
           <Faq
             q="The app can't find my product"
             a="Try scanning the barcode first. If that fails, take a photo of the ingredient label instead — the app can read the list directly. Still stuck? Send us the product name and brand and we'll add it."
+          />
+          <Faq
+            q="How are alternative products chosen?"
+            a="From a product result, tap Find Vegan/Vegetarian Alternatives and choose your preference. VegSeal looks for similar products and checks their ingredients before showing verified matches. Your selected store does not filter results or confirm that a product is sold there; availability may vary by location and inventory."
           />
           <Faq
             q="A verdict looks wrong"
