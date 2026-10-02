@@ -47,24 +47,45 @@ function ProfilePage() {
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      const { data } = await supabase.auth.getUser();
+    let loadedFor: string | null | undefined;
+    // Never await Supabase calls inside onAuthStateChange — it deadlocks the
+    // auth client. Use the session we're given and defer the profile query.
+    const apply = (u: User | null) => {
       if (!active) return;
-      setUser(data.user ?? null);
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, avatar_url")
-          .eq("id", data.user.id)
-          .maybeSingle();
-        if (!active) return;
-        setDisplayName(profile?.display_name ?? "");
-        setAvatarUrl(profile?.avatar_url ?? null);
+      setUser(u);
+      if (!u) {
+        loadedFor = null;
+        setLoading(false);
+        return;
       }
+      if (loadedFor === u.id) {
+        setLoading(false);
+        return;
+      }
+      loadedFor = u.id;
       setLoading(false);
+      setTimeout(async () => {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("id", u.id)
+            .maybeSingle();
+          if (!active) return;
+          setDisplayName(profile?.display_name ?? "");
+          setAvatarUrl(profile?.avatar_url ?? null);
+        } catch {
+          /* keep defaults */
+        }
+      }, 0);
     };
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      apply(session?.user ?? null);
+    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => apply(data.session?.user ?? null))
+      .catch(() => active && setLoading(false));
     return () => {
       active = false;
       sub.subscription.unsubscribe();
