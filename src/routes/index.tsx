@@ -40,9 +40,6 @@ function HomePage() {
           <br />
           <span className="italic">Backed by ingredient analysis and manufacturer research.</span>
         </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Need a different option? Find similar vegan or vegetarian alternatives after checking a product.
-        </p>
       </div>
 
       <div className="mt-8 px-5">
