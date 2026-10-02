@@ -124,7 +124,6 @@ function ResultPage() {
           <StatusHero
             status={product.status}
             explanation={product.explanation}
-            confidence={Number(product.confidence)}
           />
         </div>
 
