@@ -5,6 +5,14 @@ import { AppShell, PageHeader } from "@/components/AppShell";
 import { applyTheme, getTheme } from "@/lib/local-store";
 
 export const Route = createFileRoute("/settings")({
+  head: () => ({ meta: [
+    { title: "Settings | VegSeal" },
+    { name: "description", content: "Manage your VegSeal appearance and find help and app information." },
+    { property: "og:title", content: "Settings | VegSeal" },
+    { property: "og:description", content: "Manage your VegSeal appearance and find help and app information." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: SettingsPage,
 });
 

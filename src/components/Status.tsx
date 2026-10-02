@@ -90,17 +90,12 @@ const veganMap: Record<
 export function StatusHero({
   status,
   explanation,
-  confidence,
 }: {
   status: Status;
   explanation: string;
-  confidence: number;
 }) {
   const m = map[status];
   const vm = veganMap[status];
-  const pct = Math.round(confidence * 100);
-  const confLabel =
-    pct >= 90 ? "Very high confidence" : pct >= 70 ? "High confidence" : pct >= 50 ? "Moderate confidence" : "Low confidence";
   return (
     <div className={["rounded-3xl p-6 shadow-soft ring-1", m.bg, m.ring].join(" ")}>
       <div className="flex flex-wrap items-center gap-2">
@@ -117,16 +112,6 @@ export function StatusHero({
         </span>
       </div>
       <p className="mt-4 font-display text-3xl leading-tight text-foreground">{explanation}</p>
-      <div className="mt-6 flex items-center justify-between text-sm text-muted-foreground">
-        <span>{confLabel}</span>
-        <span className="tabular-nums font-semibold text-foreground">{pct}%</span>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background/60">
-        <div
-          className={["h-full rounded-full", m.dot].join(" ")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
     </div>
   );
 }

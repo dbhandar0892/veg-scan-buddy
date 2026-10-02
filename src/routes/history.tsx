@@ -6,6 +6,14 @@ import { StatusPill } from "@/components/Status";
 import { getHistory, removeHistory, clearHistory, type HistoryItem } from "@/lib/local-store";
 
 export const Route = createFileRoute("/history")({
+  head: () => ({ meta: [
+    { title: "Scan history | VegSeal" },
+    { name: "description", content: "Review the products you have checked with VegSeal." },
+    { property: "og:title", content: "Scan history | VegSeal" },
+    { property: "og:description", content: "Review the products you have checked with VegSeal." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: HistoryPage,
 });
 

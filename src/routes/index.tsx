@@ -4,6 +4,14 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "VegSeal | Check vegan and vegetarian foods" },
+    { name: "description", content: "Scan a barcode or ingredient label to check whether a product is vegan or vegetarian." },
+    { property: "og:title", content: "VegSeal | Check vegan and vegetarian foods" },
+    { property: "og:description", content: "Scan a barcode or ingredient label to check whether a product is vegan or vegetarian." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: HomePage,
 });
 

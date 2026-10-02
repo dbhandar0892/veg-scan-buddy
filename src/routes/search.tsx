@@ -11,6 +11,14 @@ import { pushHistory } from "@/lib/local-store";
 const searchSchema = z.object({ q: z.string().optional() });
 
 export const Route = createFileRoute("/search")({
+  head: () => ({ meta: [
+    { title: "Search food products | VegSeal" },
+    { name: "description", content: "Search for a food product by name or brand to check its vegan and vegetarian status." },
+    { property: "og:title", content: "Search food products | VegSeal" },
+    { property: "og:description", content: "Search for a food product by name or brand to check its vegan and vegetarian status." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (s) => searchSchema.parse(s),
   component: SearchPage,
 });
