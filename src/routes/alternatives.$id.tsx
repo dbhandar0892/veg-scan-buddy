@@ -284,7 +284,6 @@ function AlternativesPage() {
               </section>
             ) : null}
 
-
             <button onClick={() => setShowHow((s) => !s)} className="mx-auto flex items-center gap-1.5 text-xs font-medium text-primary">
               <Info className="size-3.5" /> How VegSeal chose this
             </button>
