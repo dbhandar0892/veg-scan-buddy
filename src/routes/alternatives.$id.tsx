@@ -294,6 +294,14 @@ function AlternativesPage() {
                 <p className="mb-3 text-xs text-muted-foreground">Best match — closest to what you scanned and what you asked for.</p>
                 <AltCard alt={best} pref={pref} featured originalName={original.name} originalExplanation={original.explanation} />
               </section>
+            ) : checking ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5">
+                <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Checking ingredients…</p>
+                  <p className="text-sm text-muted-foreground">Verified matches appear here as soon as each one passes.</p>
+                </div>
+              </div>
             ) : (
               <div className="rounded-2xl border border-border bg-card p-5 text-center">
                 <p className="font-medium text-foreground">We couldn't find a verified match yet.</p>
@@ -320,6 +328,12 @@ function AlternativesPage() {
                   ))}
                 </div>
               </section>
+            ) : null}
+
+            {checking && best ? (
+              <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" /> Checking more options…
+              </p>
             ) : null}
 
             <button onClick={() => setShowHow((s) => !s)} className="mx-auto flex items-center gap-1.5 text-xs font-medium text-primary">
