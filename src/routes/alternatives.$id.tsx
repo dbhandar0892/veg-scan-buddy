@@ -332,9 +332,9 @@ function AltCard({
   featured,
   originalName,
   originalExplanation,
-  store,
+
 }: {
-  store?: string | null;
+
   alt: AlternativeResult;
   pref: DietPreference;
   featured?: boolean;
