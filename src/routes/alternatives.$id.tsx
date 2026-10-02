@@ -134,17 +134,20 @@ function AlternativesPage() {
     <AppShell>
       <PageHeader back title="Find Vegan/Vegetarian Alternatives" />
       <div className="space-y-6 px-5 pb-10">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Similar to</p>
-          <div className="mt-2 flex items-center gap-3">
-            <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-              {original.image_url ? <img src={original.image_url} alt="" className="size-full object-cover" /> : null}
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary/70 via-primary to-primary/70" />
+          <div className="p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Similar to</p>
+            <div className="mt-2.5 flex items-center gap-3">
+              <div className="size-14 shrink-0 overflow-hidden rounded-2xl bg-muted ring-1 ring-border">
+                {original.image_url ? <img src={original.image_url} alt="" className="size-full object-cover" /> : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-foreground">{original.name}</p>
+                {original.brand ? <p className="truncate text-sm text-muted-foreground">{original.brand}</p> : null}
+              </div>
+              <StatusPill status={original.status} size="sm" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground">{original.name}</p>
-              {original.brand ? <p className="truncate text-sm text-muted-foreground">{original.brand}</p> : null}
-            </div>
-            <StatusPill status={original.status} size="sm" />
           </div>
         </div>
 
@@ -153,8 +156,8 @@ function AlternativesPage() {
         {!result && !loading ? (
           <>
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-foreground">My preference</h2>
-              <div className="grid grid-cols-2 gap-2">
+              <h2 className="mb-2.5 text-sm font-semibold text-foreground">My preference</h2>
+              <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-muted/60 p-1">
                 {(["vegan", "vegetarian"] as const).map((p) => (
                   <button
                     key={p}
@@ -163,10 +166,13 @@ function AlternativesPage() {
                       setDietPreference(p);
                     }}
                     className={[
-                      "rounded-2xl border p-3 text-sm font-medium capitalize",
-                      pref === p ? "border-primary bg-primary/5 text-foreground" : "border-border bg-card text-muted-foreground",
+                      "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium capitalize transition-all duration-200 active:scale-[0.97]",
+                      pref === p
+                        ? "bg-card text-foreground shadow-soft ring-1 ring-primary/40"
+                        : "text-muted-foreground",
                     ].join(" ")}
                   >
+                    {pref === p ? <Check className="size-4 text-primary" /> : null}
                     {p}
                   </button>
                 ))}
@@ -174,25 +180,31 @@ function AlternativesPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-foreground">What matters most? <span className="font-normal text-muted-foreground">(optional)</span></h2>
+              <h2 className="mb-2.5 text-sm font-semibold text-foreground">What matters most? <span className="font-normal text-muted-foreground">(optional)</span></h2>
               <div className="flex flex-wrap gap-2">
-                {PRIORITIES.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => toggle(p)}
-                    className={[
-                      "rounded-full border px-3.5 py-1.5 text-sm",
-                      priorities.includes(p) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
-                    ].join(" ")}
-                  >
-                    {p}
-                  </button>
-                ))}
+                {PRIORITIES.map((p) => {
+                  const active = priorities.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => toggle(p)}
+                      className={[
+                        "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-all duration-200 active:scale-95",
+                        active
+                          ? "border-primary bg-primary text-primary-foreground shadow-soft"
+                          : "border-border bg-card text-foreground",
+                      ].join(" ")}
+                    >
+                      {active ? <Check className="size-3.5" /> : null}
+                      {p}
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
             <section>
-              <label htmlFor="alt-note" className="mb-2 block text-sm font-semibold text-foreground">
+              <label htmlFor="alt-note" className="mb-2.5 block text-sm font-semibold text-foreground">
                 Anything else you want? <span className="font-normal text-muted-foreground">(optional)</span>
               </label>
               <input
@@ -201,7 +213,7 @@ function AlternativesPage() {
                 maxLength={300}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. something similar but spicy"
-                className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </section>
 
@@ -209,7 +221,7 @@ function AlternativesPage() {
 
             <button
               onClick={search}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-medium text-primary-foreground shadow-soft"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-semibold text-primary-foreground shadow-soft transition-all duration-200 active:scale-[0.98]"
             >
               <Leaf className="size-5" /> Find Vegan/Vegetarian Alternatives
             </button>
