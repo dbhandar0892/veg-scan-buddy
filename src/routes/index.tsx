@@ -21,7 +21,7 @@ function HomePage() {
 
   return (
     <AppShell>
-      <div className="px-5 pt-10">
+      <div className="px-5 pt-8">
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary">
           <img
             src="/icon-512.png"
@@ -36,16 +36,12 @@ function HomePage() {
           Know Before You Buy
         </h1>
         <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-          <span className="font-bold">Find out if a product is vegan or vegetarian in seconds.</span>
-          <br />
+          <span className="font-bold">Vegan or vegetarian? Know in seconds.</span>{" "}
           <span className="italic">Backed by ingredient analysis and manufacturer research.</span>
-        </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Need a different option? Find similar vegan or vegetarian alternatives after checking a product.
         </p>
       </div>
 
-      <div className="mt-8 px-5">
+      <div className="mt-6 px-5">
         <Link
           to="/scan"
           className="group relative flex items-center gap-4 overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground shadow-card"
