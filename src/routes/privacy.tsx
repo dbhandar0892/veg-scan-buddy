@@ -7,6 +7,10 @@ export const Route = createFileRoute("/privacy")({
     meta: [
       { title: "Privacy — VegSeal" },
       { name: "description", content: "VegSeal stores your scans locally on your device." },
+      { property: "og:title", content: "Privacy — VegSeal" },
+      { property: "og:description", content: "Learn how VegSeal handles your scans and product information." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Page,

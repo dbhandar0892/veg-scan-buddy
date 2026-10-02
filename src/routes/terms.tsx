@@ -7,6 +7,10 @@ export const Route = createFileRoute("/terms")({
     meta: [
       { title: "Terms — VegSeal" },
       { name: "description", content: "Terms of use for VegSeal." },
+      { property: "og:title", content: "Terms — VegSeal" },
+      { property: "og:description", content: "Read the terms of use for VegSeal's food checks and information." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Page,

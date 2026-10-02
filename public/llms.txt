@@ -8,7 +8,7 @@ VegSeal answers one question exceptionally well: can I eat this if I'm vegan or 
 - [Home](/): Scan a product, search, and see recent scans.
 - [Scan](/scan): Barcode scanner, ingredient photo scanner, and paste mode.
 - [Search](/search): Search products by name or brand.
-- [Product result](/result/): Understand a product's status and open Find Vegan/Vegetarian Alternatives from eligible results.
+- Product results: Understand a product's status and open Find Vegan/Vegetarian Alternatives from eligible results.
 - [About](/about): What VegSeal is and how it works.
 - [Privacy](/privacy): Privacy practices.
 - [Terms](/terms): Terms of use.

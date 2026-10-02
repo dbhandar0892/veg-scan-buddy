@@ -81,23 +81,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients.",
+          "Scan a barcode or ingredient label to check a product's vegan or vegetarian status and find similar alternatives.",
       },
       { name: "author", content: "VegSeal" },
       { property: "og:title", content: "VegSeal — Instantly know if food is vegan or vegetarian" },
       {
         property: "og:description",
         content:
-          "Scan a barcode or ingredient label to see instantly whether a product is vegan, vegetarian, or contains animal ingredients.",
+          "Check food ingredients and find similar vegan or vegetarian alternatives that match your preference.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "VegSeal — Instantly know if food is vegan or vegetarian" },
-      { name: "description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
-      { property: "og:description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
-      { name: "twitter:description", content: "Scan any barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9dc401ae-e7ec-4877-9307-26ea3153e744/id-preview-0ecdce80--5b2feb78-445e-4db0-baed-4a02ff5048aa.lovable.app-1783358869876.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9dc401ae-e7ec-4877-9307-26ea3153e744/id-preview-0ecdce80--5b2feb78-445e-4db0-baed-4a02ff5048aa.lovable.app-1783358869876.png" },
+      { name: "twitter:description", content: "Check food ingredients and find similar vegan or vegetarian alternatives that match your preference." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

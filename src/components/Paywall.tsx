@@ -6,6 +6,7 @@ import { isNativeApp, purchaseSubscription, restorePurchases } from "@/lib/iap";
 
 const PERKS = [
   "Unlimited barcode and ingredient-label scans",
+  "Find similar vegan or vegetarian alternatives",
   "Manufacturer and web research on unclear ingredients",
   "Scan history and favorites synced to your account",
 ];
