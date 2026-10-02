@@ -1306,3 +1306,61 @@ export const findAlternatives = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => findAlternativesCore(data));
+
+// -------- Progressive alternatives (results appear as each one is checked) --------
+// Short-lived memory so repeat searches for the same product come back instantly.
+const ALT_CACHE_MS = 30 * 60_000;
+const discoverCache = new Map<string, { at: number; value: AlternativeCandidates }>();
+const verifyCache = new Map<string, { at: number; value: AnalyzedProduct | null }>();
+
+export interface AlternativeCandidates {
+  intent: string;
+  candidates: Array<{ name: string; brand: string | null; why_similar: string[] }>;
+}
+
+export const discoverAlternativeCandidates = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        preference: z.enum(["vegan", "vegetarian"]),
+        priorities: z.array(z.string().max(40)).max(6),
+        note: z.string().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<AlternativeCandidates> => {
+    const note = data.note?.trim() || null;
+    const key = JSON.stringify([data.id, data.preference, [...data.priorities].sort(), note?.toLowerCase()]);
+    const hit = discoverCache.get(key);
+    if (hit && Date.now() - hit.at < ALT_CACHE_MS) return hit.value;
+    const original = await getProductCore({ id: data.id });
+    if (!original) throw new Error("Original product not found");
+    const { discoverAlternatives } = await import("./learn.server");
+    const { intent, candidates } = await discoverAlternatives({
+      name: original.name,
+      brand: original.brand,
+      category: null,
+      ingredients: original.ingredients_text,
+      reason: original.explanation,
+      preference: data.preference,
+      priorities: data.priorities,
+      note,
+    });
+    const value = { intent, candidates: candidates.slice(0, 6) };
+    if (value.candidates.length) discoverCache.set(key, { at: Date.now(), value });
+    return value;
+  });
+
+export const verifyAlternativeCandidate = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ name: z.string().min(1).max(200), brand: z.string().max(120).nullable() }).parse(input),
+  )
+  .handler(async ({ data }): Promise<AnalyzedProduct | null> => {
+    const key = `${data.brand ?? ""}|${data.name}`.toLowerCase();
+    const hit = verifyCache.get(key);
+    if (hit && Date.now() - hit.at < ALT_CACHE_MS) return hit.value;
+    const product = await withTimeout(verifyCandidate(data), 20_000);
+    if (product) verifyCache.set(key, { at: Date.now(), value: product });
+    return product;
+  });
