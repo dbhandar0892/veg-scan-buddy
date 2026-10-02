@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Heart, Info, Leaf, Loader2, MapPin, ScanLine, Sparkles, X } from "lucide-react";
+import { Check, Heart, Info, Leaf, List, Loader2, MapPin, Sparkles, X } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/Status";
 import { StorePicker } from "@/components/StorePicker";
 import { checkRetailer } from "@/lib/retailers.functions";
@@ -376,7 +377,9 @@ function AltCard({
   originalExplanation?: string;
 }) {
   const p = alt.product;
+  const ingredientsId = useId();
   const [saved, setSaved] = useState(false);
+  const [showIngredients, setShowIngredients] = useState(false);
   useEffect(() => setSaved(isFavorite(p.id)), [p.id]);
   const verifiedLabel = p.status === "vegan" ? "Vegan" : "Vegetarian";
   return (
@@ -427,21 +430,35 @@ function AltCard({
         </>
       ) : null}
 
-      <div className="mt-4 flex gap-2">
-        <button
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Button
+          variant="outline"
           onClick={() =>
             setSaved(
               toggleFavorite({ id: p.id, barcode: p.barcode, name: p.name, brand: p.brand, image_url: p.image_url, status: p.status, scannedAt: Date.now() }),
             )
           }
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground"
+          className="h-auto min-h-11 rounded-xl py-2.5"
         >
           <Heart className={["size-4", saved ? "fill-danger text-danger" : ""].join(" ")} /> {saved ? "Saved" : "Save"}
-        </button>
-        <Link to="/scan" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground">
-          <ScanLine className="size-4" /> Scan This Product
-        </Link>
+        </Button>
+        <Button
+          onClick={() => setShowIngredients((open) => !open)}
+          aria-expanded={showIngredients}
+          aria-controls={ingredientsId}
+          className="h-auto min-h-11 rounded-xl px-2 py-2.5 text-center whitespace-normal leading-tight"
+        >
+          <List className="size-4 shrink-0" /> Full ingredient list
+        </Button>
       </div>
+      {showIngredients ? (
+        <div id={ingredientsId} className="mt-3 border-t border-border pt-3">
+          <p className="text-xs font-semibold text-foreground">Full ingredient list</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
+            {p.ingredients_text?.trim() || "An ingredient list isn't available for this product yet."}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
