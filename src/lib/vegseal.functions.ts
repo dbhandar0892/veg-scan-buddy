@@ -138,6 +138,27 @@ async function analyzeAndLearn(
         .catch(() => null)
     : null;
 
+  // Speed: if the label is already unclear, start the product-level check
+  // (step 3) now, alongside steps 1–2. It's only used if the result is still
+  // unclear after those steps, so the verdict logic is unchanged.
+  const verdictPromise =
+    result.status === "unknown"
+      ? import("./learn.server")
+          .then(({ researchProductVerdict }) =>
+            researchProductVerdict({
+              brand: ctx.brand ?? null,
+              productName: ctx.productName ?? null,
+              ingredientsText: text,
+              ambiguous: result.hits
+                .filter((h) => h.vegan === null || h.vegetarian === null)
+                .slice(0, 8)
+                .map((h) => h.name),
+            }),
+          )
+          .catch(() => null)
+      : null;
+
+
 
   // Step 1: classify brand-new tokens (adds to global DB).
   const unknownTokens = result.hits
@@ -286,13 +307,16 @@ async function analyzeAndLearn(
       .filter((h) => h.vegan === null || h.vegetarian === null)
       .slice(0, 8)
       .map((h) => h.name);
-    const { researchProductVerdict } = await import("./learn.server");
-    const verdict = await researchProductVerdict({
-      brand: ctx.brand ?? null,
-      productName: ctx.productName ?? null,
-      ingredientsText: text,
-      ambiguous,
-    });
+    const verdict = verdictPromise
+      ? await verdictPromise
+      : await import("./learn.server").then(({ researchProductVerdict }) =>
+          researchProductVerdict({
+            brand: ctx.brand ?? null,
+            productName: ctx.productName ?? null,
+            ingredientsText: text,
+            ambiguous,
+          }),
+        );
     if (verdict && verdict.status !== "unknown") {
       const cited = verdict.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
       const note = ambiguous.length
