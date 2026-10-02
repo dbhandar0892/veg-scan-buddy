@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Heart, Info, Leaf, List, Loader2, MapPin, Sparkles, X } from "lucide-react";
@@ -377,6 +377,7 @@ function AltCard({
   originalExplanation?: string;
 }) {
   const p = alt.product;
+  const ingredientsId = useId();
   const [saved, setSaved] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   useEffect(() => setSaved(isFavorite(p.id)), [p.id]);
@@ -444,14 +445,14 @@ function AltCard({
         <Button
           onClick={() => setShowIngredients((open) => !open)}
           aria-expanded={showIngredients}
-          aria-controls={`ingredients-${p.id}`}
+          aria-controls={ingredientsId}
           className="h-auto min-h-11 rounded-xl px-2 py-2.5 text-center whitespace-normal leading-tight"
         >
           <List className="size-4 shrink-0" /> Full ingredient list
         </Button>
       </div>
       {showIngredients ? (
-        <div id={`ingredients-${p.id}`} className="mt-3 border-t border-border pt-3">
+        <div id={ingredientsId} className="mt-3 border-t border-border pt-3">
           <p className="text-xs font-semibold text-foreground">Full ingredient list</p>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
             {p.ingredients_text?.trim() || "An ingredient list isn't available for this product yet."}
