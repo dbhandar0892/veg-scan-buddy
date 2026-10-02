@@ -284,26 +284,6 @@ function AlternativesPage() {
               </section>
             ) : null}
 
-            {result.unverified.length ? (
-              <section>
-                <h2 className="mb-1 text-sm font-semibold text-foreground">We couldn't verify these yet</h2>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Similar products whose ingredients we couldn't fully confirm. We won't label them {prefLabel} without enough evidence — scan one in store to check.
-                </p>
-                <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
-                  {result.unverified.map((u) => (
-                    <li key={`${u.brand}-${u.name}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm text-foreground">{u.name}</p>
-                        {u.brand ? <p className="truncate text-xs text-muted-foreground">{u.brand}</p> : null}
-                      </div>
-                      <span className="shrink-0 text-xs text-warn-foreground">Could not verify</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
             <button onClick={() => setShowHow((s) => !s)} className="mx-auto flex items-center gap-1.5 text-xs font-medium text-primary">
               <Info className="size-3.5" /> How VegSeal chose this
             </button>
