@@ -342,12 +342,12 @@ async function analyzeAndLearn(
   // Step 4: Cheese & rennet gate. Dairy cheese is only vegetarian if the
   // rennet is microbial/FPC. Absence of "animal rennet" on the label is not
   // evidence, so verify before allowing a vegetarian verdict.
+  // This gate ALWAYS runs for cheese — a general "company confirms vegetarian"
+  // from ingredient research is not proof about the rennet, and was letting
+  // animal-rennet cheeses (e.g. Sargento Parmesan) through as vegetarian.
   if (result.status === "vegetarian" || result.status === "vegan") {
     const cheese = cheeseUpfront;
-    const alreadyConfirmed =
-      result.verification === "manufacturer" ||
-      (result.verification === "community" && result.status === "vegan");
-    if (cheese && !alreadyConfirmed) {
+    if (cheese) {
       const rv = await rennetPromise;
 
       const cited = (rv?.sources ?? []).map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
