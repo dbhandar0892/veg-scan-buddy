@@ -1,13 +1,14 @@
 # VegSeal
 
-> A trust-first vegan and vegetarian food scanner. Scan a barcode or ingredient label and instantly find out if a product is vegan, vegetarian, or contains animal ingredients.
+> A trust-first vegan and vegetarian food scanner. Scan a barcode or ingredient label, understand the result, and find similar alternatives that match your preference.
 
-VegSeal answers one question exceptionally well: can I eat this if I'm vegan or vegetarian? It never guesses — when an ingredient's origin is uncertain, it clearly says so.
+VegSeal answers one question exceptionally well: can I eat this if I'm vegan or vegetarian? It never guesses — when an ingredient's origin is uncertain, it clearly says so. If you need another option, Find Alternatives checks candidate products' ingredients before showing verified matches. A selected store is shopping context only, not proof of local availability.
 
 ## Pages
 - [Home](/): Scan a product, search, and see recent scans.
 - [Scan](/scan): Barcode scanner, ingredient photo scanner, and paste mode.
 - [Search](/search): Search products by name or brand.
+- Product results: Understand a product's status and open Find Vegan/Vegetarian Alternatives from eligible results.
 - [About](/about): What VegSeal is and how it works.
 - [Privacy](/privacy): Privacy practices.
 - [Terms](/terms): Terms of use.

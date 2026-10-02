@@ -29,9 +29,9 @@ const productQuery = (id: string) =>
 export const Route = createFileRoute("/result/$id")({
   head: () => ({ meta: [
     { title: "Product scan result | VegSeal" },
-    { name: "description", content: "See whether a scanned food product is vegan or vegetarian and read the ingredient explanation." },
+    { name: "description", content: "Check a product's vegan or vegetarian status, read its ingredient explanation, and find similar alternatives." },
     { property: "og:title", content: "Product scan result | VegSeal" },
-    { property: "og:description", content: "See whether a scanned food product is vegan or vegetarian and read the ingredient explanation." },
+    { property: "og:description", content: "Read the ingredient explanation and find similar vegan or vegetarian alternatives when you need another option." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
