@@ -161,7 +161,8 @@ export function useAccess(): AccessState {
 
     load();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") load();
+      // Defer so we never call the auth client from inside its own callback.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") setTimeout(load, 0);
     });
     return () => {
       active = false;
