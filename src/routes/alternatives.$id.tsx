@@ -57,10 +57,7 @@ function AlternativesPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
-  const [searchedStore, setSearchedStore] = useState<string | null>(null);
   const [store, setStore] = useState<string | null>(null);
-  const [carried, setCarried] = useState<Set<string>>(new Set());
-  const checkStore = useServerFn(checkRetailer);
   useEffect(() => {
     setPref(getDietPreference());
     setStore(getShoppingStore());
@@ -78,22 +75,6 @@ function AlternativesPage() {
     setShoppingStore(s);
   };
 
-  // Retailer association is looked up separately from dietary verification.
-  useEffect(() => {
-    setCarried(new Set());
-    const barcodes = (result?.verified ?? []).map((a) => a.product.barcode).filter((b): b is string => !!b);
-    if (!store || !barcodes.length) return;
-    let cancelled = false;
-    checkStore({ data: { store, barcodes } })
-      .then((rows) => {
-        if (!cancelled) setCarried(new Set([...(searchedStore === store ? (result?.storeBarcodes ?? []) : []), ...rows.filter((r) => r.carried).map((r) => r.barcode)]));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [store, result, checkStore]);
-
   if (!original) {
     return (
       <AppShell>
@@ -110,8 +91,8 @@ function AlternativesPage() {
     setError(null);
     setResult(null);
     try {
-      setSearchedStore(store);
-      setResult(await run({ data: { id, preference: pref, priorities, note: note || undefined, store: store || undefined } }));
+      // The selected store is shopping context only; it never changes results.
+      setResult(await run({ data: { id, preference: pref, priorities, note: note || undefined } }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
@@ -122,13 +103,7 @@ function AlternativesPage() {
   const toggle = (p: string) =>
     setPriorities((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
-  const storeSet = new Set(searchedStore === store ? (result?.storeBarcodes ?? []) : []);
-  // Store-only finds are shown in the store section, not as Best Match.
-  const general = (result?.verified ?? []).filter((a) => !a.product.barcode || !storeSet.has(a.product.barcode));
-  const [best, ...others] = general.length ? general : (result?.verified ?? []);
-  const atStore = store ? (result?.verified ?? []).filter((a) => a.product.barcode && carried.has(a.product.barcode)) : [];
-  const atStoreIds = new Set(atStore.map((a) => a.product.id));
-  const moreOptions = others.filter((a) => !atStoreIds.has(a.product.id));
+  const [best, ...others] = result?.verified ?? [];
 
   return (
     <AppShell>
@@ -274,31 +249,11 @@ function AlternativesPage() {
               <p className="text-sm text-muted-foreground">Looking for: <span className="text-foreground">{result.intent}</span></p>
             ) : null}
 
-            {atStore.length ? (
-              <section>
-                <h2 className="mb-1 font-display text-2xl text-foreground">Products You May Find at This Store</h2>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Listed as carried by {store}. Availability may vary by location and inventory.
-                </p>
-                <div className="space-y-3">
-                  {atStore.map((a) => (
-                    <AltCard key={a.product.id} alt={a} pref={pref} store={store} />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {store && !atStore.length && result.verified.length ? (
-              <p className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
-                We don't have store listings showing these products at {store} yet, so they're shown as general alternatives. They may still be sold there.
-              </p>
-            ) : null}
-
             {best ? (
               <section>
-                <h2 className="mb-2 font-display text-2xl text-foreground">Best Match</h2>
-                <p className="mb-3 text-xs text-muted-foreground">Closest to what you scanned and what you asked for.</p>
-                <AltCard alt={best} pref={pref} store={best.product.barcode && carried.has(best.product.barcode) ? store : null} featured originalName={original.name} originalExplanation={original.explanation} />
+                <h2 className="mb-2 font-display text-2xl text-foreground">{prefLabel} Alternatives</h2>
+                <p className="mb-3 text-xs text-muted-foreground">Best match — closest to what you scanned and what you asked for.</p>
+                <AltCard alt={best} pref={pref} featured originalName={original.name} originalExplanation={original.explanation} />
               </section>
             ) : (
               <div className="rounded-2xl border border-border bg-card p-5 text-center">
@@ -317,13 +272,11 @@ function AlternativesPage() {
               </div>
             )}
 
-            {moreOptions.length ? (
+            {others.length ? (
               <section>
-                <h2 className="mb-3 text-lg font-semibold text-foreground">
-                  {atStore.length ? `More ${prefLabel} Alternatives` : "More Options"}
-                </h2>
+                <h2 className="mb-3 text-lg font-semibold text-foreground">More Options</h2>
                 <div className="space-y-3">
-                  {moreOptions.map((a) => (
+                  {others.map((a) => (
                     <AltCard key={a.product.id} alt={a} pref={pref} />
                   ))}
                 </div>
@@ -350,7 +303,7 @@ function AlternativesPage() {
               </section>
             ) : null}
 
-            <p className="text-center text-xs text-muted-foreground">Availability may vary by store.</p>
+            <p className="text-center text-xs text-muted-foreground">Availability may vary by location and inventory.</p>
 
             <button onClick={() => setShowHow((s) => !s)} className="mx-auto flex items-center gap-1.5 text-xs font-medium text-primary">
               <Info className="size-3.5" /> How VegSeal chose this
@@ -406,11 +359,6 @@ function AltCard({
           <div className="mt-1"><StatusPill status={p.status} size="sm" /></div>
         </div>
       </Link>
-      {store ? (
-        <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="size-3 text-primary" /> You may find this at {store}
-        </p>
-      ) : null}
       {pref === "vegetarian" && p.status === "vegan" ? (
         <p className="mt-2 text-xs text-muted-foreground">Also suitable for vegetarians.</p>
       ) : null}
