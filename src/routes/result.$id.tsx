@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Heart, Leaf, Share2, Users } from "lucide-react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
@@ -53,6 +53,7 @@ function ResultPage() {
   const { id } = Route.useParams();
   const { data: product } = useSuspenseQuery(productQuery(id));
   const navigate = useNavigate();
+  const router = useRouter();
   const [fav, setFav] = useState(false);
   const [copied, setCopied] = useState(false);
   const [diet, setDiet] = useState<DietPreference>("vegan");
@@ -85,7 +86,11 @@ function ResultPage() {
     <AppShell>
       <div className="flex items-center justify-between px-4 pt-4">
         <button
-          onClick={() => navigate({ to: "/" })}
+          onClick={() => {
+            hapticTap();
+            if (router.history.canGoBack()) router.history.back();
+            else navigate({ to: "/" });
+          }}
           className="grid size-10 place-items-center rounded-full bg-card shadow-soft"
           aria-label="Back"
         >
