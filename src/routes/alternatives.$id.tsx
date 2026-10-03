@@ -71,10 +71,6 @@ function AlternativesPage() {
     const t = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 7000);
     return () => clearInterval(t);
   }, [loading]);
-  const changeStore = (s: string | null) => {
-    setStore(s);
-    setShoppingStore(s);
-  };
 
   if (!original) {
     return (
@@ -159,8 +155,6 @@ function AlternativesPage() {
             </div>
           </div>
         </div>
-
-        <StorePicker store={store} onChange={changeStore} />
 
         {!result && !loading ? (
           <>
