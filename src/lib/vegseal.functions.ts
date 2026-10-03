@@ -294,7 +294,17 @@ async function analyzeAndLearn(
             sources: v.sources.slice(0, 3),
           };
         });
-        const manufacturerConfirmed = verdicts.some((v) => v.manufacturer_confirms);
+        // Only the brand's OWN website counts as the company confirming —
+        // certifiers, vegan lists, and retailers are independent sources.
+        const brandVerdicts = verdicts.filter(
+          (v) => v.manufacturer_confirms && isBrandSource(v.sources, ctx.brand),
+        );
+        const manufacturerConfirmed = brandVerdicts.length > 0;
+        const evidence = uniqueUrls(
+          manufacturerConfirmed
+            ? brandVerdicts.flatMap((v) => v.sources)
+            : verdicts.flatMap((v) => v.sources),
+        );
         const derived = deriveStatusFromHits(patched);
         let finalStatus = derived.status;
         let finalExplanation = derived.explanation;
@@ -307,31 +317,25 @@ async function analyzeAndLearn(
           const meatLike = patched.find((h) => h.vegetarian === false);
           const nonVegan = patched.find((h) => h.vegan === false && h.vegetarian !== false);
           if (meatLike) {
-            // Stricter verdict wins — drop the manufacturer badge so the UI
-            // doesn't show a contradictory "company confirms vegetarian" line
-            // under a "not vegetarian" verdict.
             finalStatus = "not_vegetarian";
             finalExplanation = derived.status === "not_vegetarian"
               ? derived.explanation
               : `Contains ${meatLike.name.toLowerCase()}.`;
             verification = "community";
-
           } else if (nonVegan) {
             finalStatus = "vegetarian";
-            finalExplanation = `Company confirms vegetarian friendly, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
+            finalExplanation = `The company's own website confirms the unclear ingredients. Vegetarian, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           } else {
             const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);
             finalStatus = allVegan ? "vegan" : "vegetarian";
-            finalExplanation = finalStatus === "vegan"
-              ? "Company confirms this is vegan friendly."
-              : "Company confirms this is vegetarian friendly.";
+            finalExplanation = `The company's own website confirms the unclear ingredients. ${
+              finalStatus === "vegan" ? "Vegan friendly." : "Vegetarian friendly."
+            }`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           }
         }
 
-        // Never surface a "manufacturer confirms vegetarian" badge next to a
-        // not-vegetarian verdict — that contradiction breaks user trust.
         if (finalStatus === "not_vegetarian" && verification === "manufacturer") {
           verification = "community";
         }
@@ -342,6 +346,7 @@ async function analyzeAndLearn(
           explanation: finalExplanation,
           confidence: finalConfidence,
           verification,
+          evidence,
         };
       }
 
