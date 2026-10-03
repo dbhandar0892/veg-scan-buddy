@@ -371,9 +371,10 @@ async function analyzeAndLearn(
         );
     if (verdict && verdict.status !== "unknown") {
       const cited = verdict.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      const companySays = verdict.manufacturer_confirms && isBrandSource(verdict.sources, ctx.brand);
       const note = ambiguous.length
         ? ` ${ambiguous[0]} was unclear on the label; ${
-            verdict.manufacturer_confirms ? "the manufacturer" : "trusted sources"
+            companySays ? "the company's own website" : "independent sources"
           } confirmed it${cited.length ? ` (${cited.join(", ")})` : ""}.`
         : cited.length
           ? ` Confirmed by ${cited.join(", ")}.`
@@ -383,7 +384,8 @@ async function analyzeAndLearn(
         status: verdict.status,
         explanation: `${verdict.explanation}${note}`.trim(),
         confidence: Math.max(result.confidence, verdict.confidence || 0.75),
-        verification: verdict.manufacturer_confirms ? "manufacturer" : "community",
+        verification: companySays ? "manufacturer" : "community",
+        evidence: uniqueUrls(verdict.sources),
       };
       if (result.status === "not_vegetarian" && result.verification === "manufacturer") {
         result = { ...result, verification: "community" };
@@ -414,12 +416,15 @@ async function analyzeAndLearn(
           verification: "community",
         };
       } else if (rv?.rennet === "vegetarian") {
+        const brandRennet = rv.manufacturer_confirms && isBrandSource(rv.sources ?? [], ctx.brand);
         result = {
           ...result,
           explanation: `${result.explanation} The ${cheese.term} is made with vegetarian (non-animal) rennet${
             cited.length ? `, confirmed by ${cited.join(", ")}` : ""
           }.`,
-          verification: rv.manufacturer_confirms ? "manufacturer" : "community",
+          verification:
+            brandRennet && result.verification === "manufacturer" ? "manufacturer" : "community",
+          evidence: uniqueUrls([...(result.evidence ?? []), ...(rv.sources ?? [])]),
           confidence: Math.max(result.confidence, 0.85),
         };
       } else {
