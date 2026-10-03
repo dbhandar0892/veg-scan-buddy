@@ -152,12 +152,26 @@ function ResultPage() {
               : "Company confirms this is vegetarian friendly."}
           </p>
         ) : product.status !== "unknown" && product.status !== "not_vegetarian" && product.verification === "community" ? (
-          <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted">
-              <Users className="size-3.5" aria-hidden />
-            </span>
-            Verified by independent sources.
-          </p>
+          (() => {
+            const certifiedByVeganSociety =
+              product.status === "vegan" &&
+              (product.evidence_urls ?? []).some((u) => /(^|\.)vegansociety\.com/i.test(u));
+            return certifiedByVeganSociety ? (
+              <p className="mt-3 flex items-center gap-2 text-sm text-vegan">
+                <span className="inline-flex size-5 items-center justify-center rounded-full bg-vegan-soft">
+                  <Check className="size-3.5 stroke-[3]" aria-hidden />
+                </span>
+                Certified by The Vegan Society.
+              </p>
+            ) : (
+              <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted">
+                  <Users className="size-3.5" aria-hidden />
+                </span>
+                Verified by independent sources.
+              </p>
+            );
+          })()
         ) : null}
 
         {product.status !== "unknown" && (product.evidence_urls?.length ?? 0) > 0 ? (
