@@ -460,6 +460,7 @@ export interface AnalyzedProduct {
   ingredient_hits: AnalysisResult["hits"];
   verification: "unverified" | "community" | "manufacturer";
   source: string | null;
+  evidence_urls?: string[] | null;
   last_analyzed_at: string;
 }
 
@@ -490,6 +491,7 @@ async function upsertProduct(
       ? never
       : never,
     verification: data.analysis.verification ?? "unverified",
+    evidence_urls: data.analysis.verification === "unverified" ? [] : (data.analysis.evidence ?? []),
     source: data.source,
     last_analyzed_at: new Date().toISOString(),
   };
