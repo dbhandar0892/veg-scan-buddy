@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { StatusPill } from "@/components/Status";
-import { getFavorites, syncFavorites, type HistoryItem } from "@/lib/local-store";
+import { getFavorites, syncFavorites, toggleFavorite, type HistoryItem } from "@/lib/local-store";
 
 export const Route = createFileRoute("/favorites")({
   head: () => ({ meta: [
