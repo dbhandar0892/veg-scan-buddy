@@ -222,6 +222,26 @@ async function analyzeAndLearn(
           if (!uncertainKeys.has(hitKey)) return h;
           const v = findVerdict(h);
           if (!v) return h;
+          // Sugar alone never makes a product non-vegan. Refined cane sugar
+          // CAN be filtered through bone char, but most isn't, and only the
+          // manufacturer can confirm it — so unless the research explicitly
+          // confirms bone char for THIS product, keep sugar optimistic.
+          const isSugar = /\b(sugar|cane sugar|sugars)\b/i.test(`${h.name} ${h.token}`);
+          if (isSugar && v.vegan === false) {
+            const boneCharConfirmed =
+              v.manufacturer_confirms === true &&
+              /bone\s?char/i.test(`${v.explanation} ${v.sources.join(" ")}`);
+            if (!boneCharConfirmed) {
+              return {
+                ...h,
+                vegan: true,
+                vegetarian: true,
+                explanation:
+                  "Sugar is plant-based. A small share of cane sugar is filtered with bone char, but most isn't — only the manufacturer can confirm, and nothing here indicates that.",
+                sources: v.sources.slice(0, 3),
+              };
+            }
+          }
           // Research must name credible animal-derived evidence before it can
           // turn a vegetarian-safe or unknown ingredient into non-vegetarian.
           // Dairy and eggs make a product non-vegan, not non-vegetarian.
