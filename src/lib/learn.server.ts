@@ -187,7 +187,7 @@ export async function researchUncertain(
 
 Verification priority (use in this order, stop at the first that yields a credible answer):
 1. The manufacturer's official website, product page, ingredient/allergen page, FAQ, or written customer-service statement for THIS specific product.
-2. Official vegan/vegetarian certifications (Vegan Society, Certified Vegan, V-Label, PETA's verified brand list).
+2. Official vegan/vegetarian certifications. ALWAYS check The Vegan Society's official Vegan Trademark product registry (vegansociety.com) for this product and brand first — a listing there is definitive proof the product is certified vegan. Also check Certified Vegan (vegan.org), V-Label, and PETA's verified brand list.
 3. Trusted food/ingredient databases (Open Food Facts, EFSA, FDA, Barnivore for beverages).
 
 DO NOT use random blogs, personal websites, Reddit, Quora, discussion forums, unverified news posts, AI-generated summaries, or aggregator content farms as evidence. If the only sources you find are those, treat the ingredient as unverified.
