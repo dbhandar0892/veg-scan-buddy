@@ -100,7 +100,6 @@ function AlternativesPage() {
           intent,
           verified: [...found].sort((a, b) => a.i - b.i).map((f) => f.alt),
           unverified: [],
-          storeBarcodes: [],
         });
       publish();
       setLoading(false);
