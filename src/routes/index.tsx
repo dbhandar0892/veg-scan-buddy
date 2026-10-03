@@ -35,7 +35,7 @@ function HomePage() {
         <h1 className="mt-3 font-display text-[32px] leading-[1.05] tracking-tight text-foreground sm:text-[42px]">
           Know Before You Buy
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+        <p className="mt-2 text-[13px] text-muted-foreground sm:text-[13px]">
           <span className="font-bold">Find out if a product is vegan or vegetarian in seconds.</span>
           <br />
           <span className="italic">Backed by ingredient analysis and manufacturer research.</span>
