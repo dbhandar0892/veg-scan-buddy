@@ -9,83 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SupportRouteImport } from './routes/support'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ScanRouteImport } from './routes/scan'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ResultIdRouteImport } from './routes/result.$id'
-import { Route as IngredientSlugRouteImport } from './routes/ingredient.$slug'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AlternativesIdRouteImport } from './routes/alternatives.$id'
+import { Route as IngredientSlugRouteImport } from './routes/ingredient.$slug'
+import { Route as ResultIdRouteImport } from './routes/result.$id'
 import { Route as ApiPublicV1SplatRouteImport } from './routes/api/public/v1/$'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SupportRoute = SupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScanRoute = ScanRouteImport.update({
-  id: '/scan',
-  path: '/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -93,14 +38,69 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResultIdRoute = ResultIdRouteImport.update({
-  id: '/result/$id',
-  path: '/result/$id',
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlternativesIdRoute = AlternativesIdRouteImport.update({
+  id: '/alternatives/$id',
+  path: '/alternatives/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IngredientSlugRoute = IngredientSlugRouteImport.update({
@@ -108,9 +108,9 @@ const IngredientSlugRoute = IngredientSlugRouteImport.update({
   path: '/ingredient/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AlternativesIdRoute = AlternativesIdRouteImport.update({
-  id: '/alternatives/$id',
-  path: '/alternatives/$id',
+const ResultIdRoute = ResultIdRouteImport.update({
+  id: '/result/$id',
+  path: '/result/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicV1SplatRoute = ApiPublicV1SplatRouteImport.update({
@@ -266,88 +266,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/support': {
-      id: '/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof SupportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scan': {
-      id: '/scan'
-      path: '/scan'
-      fullPath: '/scan'
-      preLoaderRoute: typeof ScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -357,18 +280,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/result/$id': {
-      id: '/result/$id'
-      path: '/result/$id'
-      fullPath: '/result/$id'
-      preLoaderRoute: typeof ResultIdRouteImport
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alternatives/$id': {
+      id: '/alternatives/$id'
+      path: '/alternatives/$id'
+      fullPath: '/alternatives/$id'
+      preLoaderRoute: typeof AlternativesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ingredient/$slug': {
@@ -378,11 +378,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IngredientSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/alternatives/$id': {
-      id: '/alternatives/$id'
-      path: '/alternatives/$id'
-      fullPath: '/alternatives/$id'
-      preLoaderRoute: typeof AlternativesIdRouteImport
+    '/result/$id': {
+      id: '/result/$id'
+      path: '/result/$id'
+      fullPath: '/result/$id'
+      preLoaderRoute: typeof ResultIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/v1/$': {
