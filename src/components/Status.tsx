@@ -63,7 +63,13 @@ const veganMap: Record<
   Status,
   { label: string; dot: string; ring: string; bg: string; fg: string }
 > = {
-  vegan: map.vegan,
+  vegan: {
+    label: "Vegetarian",
+    dot: "bg-vegan",
+    ring: "ring-vegan/30",
+    bg: "bg-vegan-soft",
+    fg: "text-vegan",
+  },
   vegetarian: {
     label: "Not vegan",
     dot: "bg-danger",
@@ -112,12 +118,13 @@ export function StatusHero({
             <Check className="size-3.5 stroke-[3]" aria-hidden />
           ) : null}
         </span>
-        {status !== "vegan" ? (
-          <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
-            <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
-            {vm.label}
-          </span>
-        ) : null}
+        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
+          <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
+          {vm.label}
+          {status === "vegan" ? (
+            <Check className="size-3.5 stroke-[3]" aria-hidden />
+          ) : null}
+        </span>
       </div>
       <p className="mt-4 font-display text-3xl leading-tight text-foreground">{explanation}</p>
     </div>
