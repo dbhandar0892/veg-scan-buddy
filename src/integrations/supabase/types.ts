@@ -93,6 +93,7 @@ export type Database = {
           category: string | null
           confidence: number
           created_at: string
+          evidence_urls: string[]
           explanation: string
           id: string
           image_url: string | null
@@ -110,6 +111,7 @@ export type Database = {
           category?: string | null
           confidence?: number
           created_at?: string
+          evidence_urls?: string[]
           explanation: string
           id?: string
           image_url?: string | null
@@ -127,6 +129,7 @@ export type Database = {
           category?: string | null
           confidence?: number
           created_at?: string
+          evidence_urls?: string[]
           explanation?: string
           id?: string
           image_url?: string | null

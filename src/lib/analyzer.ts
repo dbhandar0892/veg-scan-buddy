@@ -40,6 +40,8 @@ export interface AnalysisResult {
   explanation: string;
   hits: IngredientHit[];
   verification?: "unverified" | "community" | "manufacturer";
+  /** Web pages the verdict relies on, shown under the result so it's checkable. */
+  evidence?: string[];
 }
 
 const STOPWORDS = new Set([

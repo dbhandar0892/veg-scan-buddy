@@ -112,6 +112,33 @@ function domainOf(url: string): string {
   }
 }
 
+/**
+ * True only when one of the sources is the brand's own website. "Company
+ * confirms" may only be shown when the company itself said it — not when a
+ * certifier, retailer, or vegan list did.
+ */
+function isBrandSource(sources: string[], brand?: string | null): boolean {
+  if (!brand) return false;
+  const words = brand
+    .toLowerCase()
+    .split(/[,&/]| and /)[0]
+    .normalize("NFD")
+    .replace(/[^a-z0-9 ]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3);
+  if (!words.length) return false;
+  const joined = words.join("");
+  return sources.some((s) => {
+    const host = domainOf(s).replace(/[^a-z0-9.]/g, "");
+    const labels = host.split(".");
+    return labels.some((l) => l === joined || words.some((w) => l === w || l.startsWith(w)));
+  });
+}
+
+function uniqueUrls(urls: string[]): string[] {
+  return Array.from(new Set(urls.filter((u) => /^https?:\/\//i.test(u)))).slice(0, 3);
+}
+
 // Self-learning: DB → AI classify → web-research any still-uncertain items.
 
 async function analyzeAndLearn(
@@ -267,7 +294,17 @@ async function analyzeAndLearn(
             sources: v.sources.slice(0, 3),
           };
         });
-        const manufacturerConfirmed = verdicts.some((v) => v.manufacturer_confirms);
+        // Only the brand's OWN website counts as the company confirming —
+        // certifiers, vegan lists, and retailers are independent sources.
+        const brandVerdicts = verdicts.filter(
+          (v) => v.manufacturer_confirms && isBrandSource(v.sources, ctx.brand),
+        );
+        const manufacturerConfirmed = brandVerdicts.length > 0;
+        const evidence = uniqueUrls(
+          manufacturerConfirmed
+            ? brandVerdicts.flatMap((v) => v.sources)
+            : verdicts.flatMap((v) => v.sources),
+        );
         const derived = deriveStatusFromHits(patched);
         let finalStatus = derived.status;
         let finalExplanation = derived.explanation;
@@ -280,31 +317,25 @@ async function analyzeAndLearn(
           const meatLike = patched.find((h) => h.vegetarian === false);
           const nonVegan = patched.find((h) => h.vegan === false && h.vegetarian !== false);
           if (meatLike) {
-            // Stricter verdict wins — drop the manufacturer badge so the UI
-            // doesn't show a contradictory "company confirms vegetarian" line
-            // under a "not vegetarian" verdict.
             finalStatus = "not_vegetarian";
             finalExplanation = derived.status === "not_vegetarian"
               ? derived.explanation
               : `Contains ${meatLike.name.toLowerCase()}.`;
             verification = "community";
-
           } else if (nonVegan) {
             finalStatus = "vegetarian";
-            finalExplanation = `Company confirms vegetarian friendly, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
+            finalExplanation = `The company's own website confirms the unclear ingredients. Vegetarian, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           } else {
             const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);
             finalStatus = allVegan ? "vegan" : "vegetarian";
-            finalExplanation = finalStatus === "vegan"
-              ? "Company confirms this is vegan friendly."
-              : "Company confirms this is vegetarian friendly.";
+            finalExplanation = `The company's own website confirms the unclear ingredients. ${
+              finalStatus === "vegan" ? "Vegan friendly." : "Vegetarian friendly."
+            }`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           }
         }
 
-        // Never surface a "manufacturer confirms vegetarian" badge next to a
-        // not-vegetarian verdict — that contradiction breaks user trust.
         if (finalStatus === "not_vegetarian" && verification === "manufacturer") {
           verification = "community";
         }
@@ -315,6 +346,7 @@ async function analyzeAndLearn(
           explanation: finalExplanation,
           confidence: finalConfidence,
           verification,
+          evidence,
         };
       }
 
@@ -339,9 +371,10 @@ async function analyzeAndLearn(
         );
     if (verdict && verdict.status !== "unknown") {
       const cited = verdict.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      const companySays = verdict.manufacturer_confirms && isBrandSource(verdict.sources, ctx.brand);
       const note = ambiguous.length
         ? ` ${ambiguous[0]} was unclear on the label; ${
-            verdict.manufacturer_confirms ? "the manufacturer" : "trusted sources"
+            companySays ? "the company's own website" : "independent sources"
           } confirmed it${cited.length ? ` (${cited.join(", ")})` : ""}.`
         : cited.length
           ? ` Confirmed by ${cited.join(", ")}.`
@@ -351,7 +384,8 @@ async function analyzeAndLearn(
         status: verdict.status,
         explanation: `${verdict.explanation}${note}`.trim(),
         confidence: Math.max(result.confidence, verdict.confidence || 0.75),
-        verification: verdict.manufacturer_confirms ? "manufacturer" : "community",
+        verification: companySays ? "manufacturer" : "community",
+        evidence: uniqueUrls(verdict.sources),
       };
       if (result.status === "not_vegetarian" && result.verification === "manufacturer") {
         result = { ...result, verification: "community" };
@@ -382,12 +416,15 @@ async function analyzeAndLearn(
           verification: "community",
         };
       } else if (rv?.rennet === "vegetarian") {
+        const brandRennet = rv.manufacturer_confirms && isBrandSource(rv.sources ?? [], ctx.brand);
         result = {
           ...result,
           explanation: `${result.explanation} The ${cheese.term} is made with vegetarian (non-animal) rennet${
             cited.length ? `, confirmed by ${cited.join(", ")}` : ""
           }.`,
-          verification: rv.manufacturer_confirms ? "manufacturer" : "community",
+          verification:
+            brandRennet && result.verification === "manufacturer" ? "manufacturer" : "community",
+          evidence: uniqueUrls([...(result.evidence ?? []), ...(rv.sources ?? [])]),
           confidence: Math.max(result.confidence, 0.85),
         };
       } else {
@@ -423,6 +460,7 @@ export interface AnalyzedProduct {
   ingredient_hits: AnalysisResult["hits"];
   verification: "unverified" | "community" | "manufacturer";
   source: string | null;
+  evidence_urls?: string[] | null;
   last_analyzed_at: string;
 }
 
@@ -453,6 +491,7 @@ async function upsertProduct(
       ? never
       : never,
     verification: data.analysis.verification ?? "unverified",
+    evidence_urls: data.analysis.verification === "unverified" ? [] : (data.analysis.evidence ?? []),
     source: data.source,
     last_analyzed_at: new Date().toISOString(),
   };

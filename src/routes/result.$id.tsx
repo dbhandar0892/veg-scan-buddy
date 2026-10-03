@@ -160,6 +160,28 @@ function ResultPage() {
           </p>
         ) : null}
 
+        {product.status !== "unknown" && (product.evidence_urls?.length ?? 0) > 0 ? (
+          <div className="mt-2 text-xs text-muted-foreground">
+            <span>Source{product.evidence_urls!.length > 1 ? "s" : ""}: </span>
+            {product.evidence_urls!.map((u, i) => {
+              let host = u;
+              try {
+                host = new URL(u).hostname.replace(/^www\./, "");
+              } catch {
+                /* keep raw */
+              }
+              return (
+                <span key={u}>
+                  {i > 0 ? ", " : ""}
+                  <a href={u} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+                    {host}
+                  </a>
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
+
 
 
 

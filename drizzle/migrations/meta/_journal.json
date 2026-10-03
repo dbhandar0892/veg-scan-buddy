@@ -15,6 +15,13 @@
       "when": 1791037600738,
       "tag": "0001_recheck_sugar_verdicts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791038392591,
+      "tag": "0002_product_evidence_urls",
+      "breakpoints": true
     }
   ]
 }
