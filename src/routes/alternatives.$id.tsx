@@ -60,10 +60,8 @@ function AlternativesPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
-  const [store, setStore] = useState<string | null>(null);
   useEffect(() => {
     setPref(getDietPreference());
-    setStore(getShoppingStore());
   }, []);
   useEffect(() => {
     if (!loading) {
