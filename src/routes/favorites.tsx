@@ -40,11 +40,11 @@ function FavoritesPage() {
         ) : (
           <ul className="space-y-2">
             {items.map((i) => (
-              <li key={i.id}>
+              <li key={i.id} className="flex items-center gap-2">
                 <Link
                   to="/result/$id"
                   params={{ id: i.id }}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft"
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft"
                 >
                   <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
                     {i.image_url ? (
@@ -60,6 +60,14 @@ function FavoritesPage() {
                   </div>
                   <StatusPill status={i.status} size="sm" />
                 </Link>
+                <button
+                  type="button"
+                  aria-label={`Remove ${i.name} from favorites`}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full text-primary transition-opacity active:opacity-60"
+                  onClick={() => toggleFavorite(i)}
+                >
+                  <Heart className="size-5 fill-current" />
+                </button>
               </li>
             ))}
           </ul>
