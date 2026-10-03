@@ -6,7 +6,6 @@ import { Check, Heart, Info, Leaf, List, Loader2, Sparkles, X } from "lucide-rea
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/Status";
-import { StorePicker } from "@/components/StorePicker";
 import {
   discoverAlternativeCandidates,
   getProduct,
@@ -20,9 +19,7 @@ function meetsPref(status: string, pref: DietPreference) {
 }
 import {
   getDietPreference,
-  getShoppingStore,
   isFavorite,
-  setShoppingStore,
   setDietPreference,
   toggleFavorite,
   type DietPreference,
