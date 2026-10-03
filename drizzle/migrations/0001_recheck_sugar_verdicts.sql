@@ -1,0 +1,1 @@
+UPDATE public.products SET status='unknown', verification='unverified', explanation='This result is being rechecked. Tap to scan again for an updated answer.', last_analyzed_at = now() - interval '365 days' WHERE id IN ('7de1a15c-f87c-41d8-bb30-4aacef7ff34b','c3641261-46cf-4fe3-bfbd-0db552621001');
