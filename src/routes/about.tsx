@@ -41,7 +41,7 @@ function AboutPage() {
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           If you want another option, you can find similar products that match your vegan
           or vegetarian preference. We check each alternative's ingredients before showing it
-          as a match. Store selection is for your shopping context, not a promise of availability.
+          as a match. No brand pays for placement, and we never promise a store's stock.
         </p>
         <p className="mt-6 text-sm text-muted-foreground">
           Product data comes from the open food community. Ingredient explanations are

@@ -6,7 +6,6 @@ import { Check, Heart, Info, Leaf, List, Loader2, Sparkles, X } from "lucide-rea
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/Status";
-import { StorePicker } from "@/components/StorePicker";
 import {
   discoverAlternativeCandidates,
   getProduct,
@@ -20,9 +19,7 @@ function meetsPref(status: string, pref: DietPreference) {
 }
 import {
   getDietPreference,
-  getShoppingStore,
   isFavorite,
-  setShoppingStore,
   setDietPreference,
   toggleFavorite,
   type DietPreference,
@@ -63,10 +60,8 @@ function AlternativesPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AlternativesResponse | null>(null);
   const [showHow, setShowHow] = useState(false);
-  const [store, setStore] = useState<string | null>(null);
   useEffect(() => {
     setPref(getDietPreference());
-    setStore(getShoppingStore());
   }, []);
   useEffect(() => {
     if (!loading) {
@@ -76,10 +71,6 @@ function AlternativesPage() {
     const t = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 7000);
     return () => clearInterval(t);
   }, [loading]);
-  const changeStore = (s: string | null) => {
-    setStore(s);
-    setShoppingStore(s);
-  };
 
   if (!original) {
     return (
@@ -109,7 +100,6 @@ function AlternativesPage() {
           intent,
           verified: [...found].sort((a, b) => a.i - b.i).map((f) => f.alt),
           unverified: [],
-          storeBarcodes: [],
         });
       publish();
       setLoading(false);
@@ -164,8 +154,6 @@ function AlternativesPage() {
             </div>
           </div>
         </div>
-
-        <StorePicker store={store} onChange={changeStore} />
 
         {!result && !loading ? (
           <>
