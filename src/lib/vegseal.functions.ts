@@ -112,6 +112,33 @@ function domainOf(url: string): string {
   }
 }
 
+/**
+ * True only when one of the sources is the brand's own website. "Company
+ * confirms" may only be shown when the company itself said it — not when a
+ * certifier, retailer, or vegan list did.
+ */
+function isBrandSource(sources: string[], brand?: string | null): boolean {
+  if (!brand) return false;
+  const words = brand
+    .toLowerCase()
+    .split(/[,&/]| and /)[0]
+    .normalize("NFD")
+    .replace(/[^a-z0-9 ]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3);
+  if (!words.length) return false;
+  const joined = words.join("");
+  return sources.some((s) => {
+    const host = domainOf(s).replace(/[^a-z0-9.]/g, "");
+    const labels = host.split(".");
+    return labels.some((l) => l === joined || words.some((w) => l === w || l.startsWith(w)));
+  });
+}
+
+function uniqueUrls(urls: string[]): string[] {
+  return Array.from(new Set(urls.filter((u) => /^https?:\/\//i.test(u)))).slice(0, 3);
+}
+
 // Self-learning: DB → AI classify → web-research any still-uncertain items.
 
 async function analyzeAndLearn(
