@@ -112,10 +112,12 @@ export function StatusHero({
             <Check className="size-3.5 stroke-[3]" aria-hidden />
           ) : null}
         </span>
-        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
-          <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
-          {vm.label}
-        </span>
+        {status !== "vegan" ? (
+          <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
+            <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
+            {vm.label}
+          </span>
+        ) : null}
       </div>
       <p className="mt-4 font-display text-3xl leading-tight text-foreground">{explanation}</p>
     </div>
