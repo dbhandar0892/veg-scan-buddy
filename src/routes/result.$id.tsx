@@ -88,7 +88,7 @@ function ResultPage() {
         <button
           onClick={() => {
             hapticTap();
-            if (router.canGoBack()) router.history.back();
+            if (router.history.canGoBack()) router.history.back();
             else navigate({ to: "/" });
           }}
           className="grid size-10 place-items-center rounded-full bg-card shadow-soft"
