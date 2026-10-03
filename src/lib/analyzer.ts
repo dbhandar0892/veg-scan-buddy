@@ -445,7 +445,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       kinds.size === 0
         ? "dairy, egg, or honey"
         : Array.from(kinds).join(kinds.size === 2 ? " and " : ", ");
-    explanation = `Contains ${label} but no meat or animal rennet.`;
+    explanation = `Contains ${label}, but no meat or animal rennet.`;
   } else if (hasUnknownVeganOnly) {
     status = "vegetarian";
     explanation = "Vegetarian confirmed; a few items couldn't be verified as vegan.";

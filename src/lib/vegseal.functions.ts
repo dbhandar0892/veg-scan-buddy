@@ -324,7 +324,7 @@ async function analyzeAndLearn(
             verification = "community";
           } else if (nonVegan) {
             finalStatus = "vegetarian";
-            finalExplanation = `The company's own website confirms the unclear ingredients. Vegetarian, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
+            finalExplanation = `Contains ${foodWordFor(nonVegan)}, but no meat or animal rennet. The company's own website confirms the unclear ingredients.`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           } else {
             const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);
