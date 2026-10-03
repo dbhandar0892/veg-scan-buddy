@@ -1218,46 +1218,6 @@ export interface AlternativesResponse {
   intent: string;
   verified: AlternativeResult[];
   unverified: Array<{ name: string; brand: string | null; why_similar: string[] }>;
-  /** Barcodes Open Food Facts lists as sold at the chosen store. */
-  storeBarcodes: string[];
-}
-
-// Find products Open Food Facts lists at the chosen store, in the same category
-// as the scanned product. Each is then verified by the normal ingredient check.
-async function storeCandidates(
-  originalBarcode: string | null,
-  store: string,
-  pref: DietPreference,
-): Promise<string[]> {
-  const { storeTagSlugs, storeListed } = await import("./stores");
-  const headers = { "User-Agent": "VegSeal/1.0 (contact@vegseal.app)" };
-  const get = async (url: string) => {
-    const r = await withTimeout(fetch(url, { headers }).then((x) => (x.ok ? x.json() : null)), 6000);
-    return r as Record<string, unknown> | null;
-  };
-  let cats: string[] = [];
-  if (originalBarcode) {
-    const j = await get(
-      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(originalBarcode)}?fields=categories_tags`,
-    );
-    cats = ((j?.product as { categories_tags?: string[] } | undefined)?.categories_tags ?? []).slice(-2).reverse();
-  }
-  if (!cats.length) return [];
-  const label = pref === "vegan" ? "en:vegan" : "en:vegetarian";
-  for (const cat of cats) {
-    for (const tag of storeTagSlugs(store)) {
-      const j = await get(
-        `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(cat)}&stores_tags=${encodeURIComponent(tag)}&labels_tags=${label}&fields=code,stores,stores_tags&page_size=8`,
-      );
-      const prods = (j?.products as { code?: string; stores?: string; stores_tags?: string[] }[] | undefined) ?? [];
-      const codes = prods
-        .filter((p) => p.code && storeListed([...(p.stores_tags ?? []), ...(p.stores ?? "").split(",")], store))
-        .map((p) => p.code!)
-        .filter((c) => c !== originalBarcode);
-      if (codes.length) return codes.slice(0, 4);
-    }
-  }
-  return [];
 }
 
 function meetsPreference(status: Status, pref: DietPreference): boolean {
