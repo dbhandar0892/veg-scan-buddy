@@ -51,7 +51,7 @@ function SupportPage() {
           />
           <Faq
             q="How are alternative products chosen?"
-            a="From a product result, tap Find Vegan/Vegetarian Alternatives and choose your preference. VegSeal looks for similar products and checks their ingredients before showing verified matches. Tell us where you're shopping — availability may vary by location and inventory."
+            a="From a product result, tap Find Vegan/Vegetarian Alternatives and choose your preference. VegSeal looks for similar products and checks their ingredients before showing verified matches."
           />
           <Faq
             q="A verdict looks wrong"

@@ -89,7 +89,6 @@ function AlternativesPage() {
     setError(null);
     setResult(null);
     try {
-      // The selected store is shopping context only; it never changes results.
       const { intent, candidates } = await discover({
         data: { id, preference: pref, priorities, note: note || undefined },
       });
