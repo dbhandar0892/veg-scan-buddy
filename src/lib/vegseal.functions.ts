@@ -104,6 +104,17 @@ async function fetchOffProduct(raw: string, variants: string[]): Promise<OffProd
 
 
 
+// Plain, ingredient-based word for why a product isn't vegan — matches the
+// "Contains dairy, but no meat or animal rennet." message style. Foreign or
+// technical names ("lait" = milk) map to the everyday word users expect.
+function foodWordFor(h: { name: string; slug?: string | null }): string {
+  const t = `${h.slug ?? ""} ${h.name}`.toLowerCase();
+  if (/\bhoney\b/.test(t)) return "honey";
+  if (/\b(egg|albumen|albumin|ovalbumin|mayonnaise|mayo|meringue)\b/.test(t)) return "egg";
+  if (/\b(milk|lait|leche|dairy|whey|lactose|casein|cream|creme|butter|cheese|yog?urt|ghee)\b/.test(t)) return "dairy";
+  return h.name.toLowerCase();
+}
+
 function domainOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -324,7 +335,7 @@ async function analyzeAndLearn(
             verification = "community";
           } else if (nonVegan) {
             finalStatus = "vegetarian";
-            finalExplanation = `The company's own website confirms the unclear ingredients. Vegetarian, but not vegan because of ${nonVegan.name.toLowerCase()}.`;
+            finalExplanation = `Contains ${foodWordFor(nonVegan)}, but no meat or animal rennet. The company's own website confirms the unclear ingredients.`;
             finalConfidence = Math.max(finalConfidence, 0.9);
           } else {
             const allVegan = patched.every((h) => h.vegan === true || h.vegan === null);

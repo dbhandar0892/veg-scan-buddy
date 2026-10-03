@@ -196,7 +196,7 @@ Only mark vegan=true/false or vegetarian=true/false when a source from tiers 1-3
 
 Return ONLY JSON matching:
 {"verdicts":[{"token":string,"vegan":boolean|null,"vegetarian":boolean|null,"confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}]}
-- explanation: <=20 words, plain English. If unverified, say so plainly ("Source not confirmed; verdict is based on the other ingredients.").
+- explanation: <=20 words, plain English describing what the product CONTAINS, e.g. "Contains dairy, but no meat or animal rennet." NEVER mention sources, research, websites, companies, or "independent sources" in the explanation — that information belongs in the sources array only. If unverified, say so plainly ("Source not confirmed; verdict is based on the other ingredients.").
 - sources: up to 3 URLs actually used, only from tiers 1-3.
 - manufacturer_confirms: true only if tier 1 explicitly confirms the status for this product.
 - confidence: 0.0-1.0. Use <=0.4 when unverified.`;
@@ -332,7 +332,7 @@ Never use blogs, Reddit, Quora, forums, or content farms as evidence.
 
 Return ONLY JSON: {"status":"vegan"|"vegetarian"|"not_vegetarian"|"unknown","confidence":number,"explanation":string,"sources":string[],"manufacturer_confirms":boolean}
 - Use "unknown" only if tiers 1-3 give nothing or clearly conflict.
-- explanation: <=25 words, plain English. If ambiguous ingredients (sugar, natural flavors, enzymes, mono- and diglycerides) were resolved, say briefly what the evidence showed.
+- explanation: <=25 words, plain English describing what the product CONTAINS, e.g. "Contains dairy, but no meat or animal rennet." NEVER mention sources, research, websites, or "independent sources" in the explanation — that belongs in the sources array only. If ambiguous ingredients (sugar, natural flavors, enzymes, mono- and diglycerides) were resolved, name them briefly, e.g. "Contains natural flavors from plant sources."
 - sources: up to 3 URLs actually used, tiers 1-3 only.
 - manufacturer_confirms: true only if tier 1 explicitly states the dietary status.`;
 
