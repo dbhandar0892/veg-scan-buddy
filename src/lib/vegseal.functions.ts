@@ -435,8 +435,8 @@ async function analyzeAndLearn(
       if (boneChar) {
         result = {
           ...result,
-          status: "vegetarian",
-          explanation: "Contains sugar filtered with bone char, so not vegan. No meat or animal rennet.",
+          status: "not_vegetarian",
+          explanation: "Contains sugar filtered with bone char (animal bones), so not vegetarian or vegan.",
           verification: "manufacturer",
           evidence: uniqueUrls(sv.sources),
         };
