@@ -150,6 +150,10 @@ function uniqueUrls(urls: string[]): string[] {
   return Array.from(new Set(urls.filter((u) => /^https?:\/\//i.test(u)))).slice(0, 3);
 }
 
+function uniqueDomains(urls: string[], limit = 2): string[] {
+  return Array.from(new Set(urls.map((url) => domainOf(url)).filter(Boolean))).slice(0, limit);
+}
+
 // Self-learning: DB → AI classify → web-research any still-uncertain items.
 
 async function analyzeAndLearn(
@@ -291,7 +295,7 @@ async function analyzeAndLearn(
               : v.vegetarian;
           const confirmedBy =
             v.sources.length > 0
-              ? ` Confirmed by ${v.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2).join(", ")}.`
+              ? ` Confirmed by ${uniqueDomains(v.sources).join(", ")}.`
               : "";
           const prefix =
             v.vegan === true || v.vegetarian === true
@@ -381,7 +385,7 @@ async function analyzeAndLearn(
           }),
         );
     if (verdict && verdict.status !== "unknown") {
-      const cited = verdict.sources.map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      const cited = uniqueDomains(verdict.sources);
       const companySays = verdict.manufacturer_confirms && isBrandSource(verdict.sources, ctx.brand);
       const note = ambiguous.length
         ? ` ${ambiguous[0]} was unclear on the label; ${
@@ -415,7 +419,7 @@ async function analyzeAndLearn(
     if (cheese) {
       const rv = await rennetPromise;
 
-      const cited = (rv?.sources ?? []).map((s) => domainOf(s)).filter(Boolean).slice(0, 2);
+      const cited = uniqueDomains(rv?.sources ?? []);
       if (rv?.rennet === "animal") {
         result = {
           ...result,
