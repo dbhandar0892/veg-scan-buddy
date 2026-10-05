@@ -273,16 +273,26 @@ async function analyzeAndLearn(
             const boneCharConfirmed =
               v.manufacturer_confirms === true &&
               /bone\s?char/i.test(`${v.explanation} ${v.sources.join(" ")}`);
-            if (!boneCharConfirmed) {
+            if (boneCharConfirmed) {
+              // The brand's own site confirms bone char — sugar is then
+              // neither vegetarian nor vegan for this product.
               return {
                 ...h,
-                vegan: true,
-                vegetarian: true,
+                vegan: false,
+                vegetarian: false,
                 explanation:
-                  "Sugar is plant-based. A small share of cane sugar is filtered with bone char, but most isn't — only the manufacturer can confirm, and nothing here indicates that.",
+                  "Contains sugar filtered with bone char (animal bones), so not vegetarian or vegan.",
                 sources: v.sources.slice(0, 3),
               };
             }
+            return {
+              ...h,
+              vegan: true,
+              vegetarian: true,
+              explanation:
+                "Sugar is plant-based. A small share of cane sugar is filtered with bone char, but most isn't — only the manufacturer can confirm, and nothing here indicates that.",
+              sources: v.sources.slice(0, 3),
+            };
           }
           // Research must name credible animal-derived evidence before it can
           // turn a vegetarian-safe or unknown ingredient into non-vegetarian.
