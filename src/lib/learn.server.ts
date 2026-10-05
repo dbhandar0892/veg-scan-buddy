@@ -325,7 +325,8 @@ export async function researchProductVerdict(ctx: {
 
 Search in this strict order and stop at the first credible answer:
 1. The manufacturer's official website for THIS product: product page, ingredient/allergen page, FAQ, dietary/suitability statement, or a written customer-service reply.
-2. Official certifications (Vegan Society, Certified Vegan, V-Label, PETA verified brand list) and the brand's official social/press statements.
+2. Official certifications — ALWAYS check The Vegan Society's Vegan Trademark registry (vegansociety.com) for this product, then Certified Vegan, V-Label, PETA verified brand list — and the brand's official social/press statements.
+If the product contains sugar, look for whether the manufacturer states its sugar is vegan or bone-char-free, or that it uses bone char. Only mention bone char in the explanation if the manufacturer itself confirms bone char is used.
 3. Reputable food databases (Open Food Facts, EFSA, FDA, Barnivore).
 
 Never use blogs, Reddit, Quora, forums, or content farms as evidence.

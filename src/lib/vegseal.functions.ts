@@ -408,6 +408,48 @@ async function analyzeAndLearn(
     }
   }
 
+  // Step 3b: Sugar check. Sugar is usually plant-based, but some cane sugar
+  // is filtered with bone char. When a product would be "vegan" only on
+  // the label's word, and contains sugar, check the manufacturer's own site
+  // and The Vegan Society / other certifiers before settling the answer.
+  // Sugar still never flips a product to non-vegan unless the brand itself
+  // confirms bone char.
+  const hasSugar = result.hits.some((h) => /\b(sugar|cane sugar|sugars)\b/i.test(`${h.name} ${h.token}`));
+  if (
+    hasSugar &&
+    result.status === "vegan" &&
+    result.verification !== "manufacturer" &&
+    !(result.evidence && result.evidence.length > 0)
+  ) {
+    const sv = await import("./learn.server").then(({ researchProductVerdict }) =>
+      researchProductVerdict({
+        brand: ctx.brand ?? null,
+        productName: ctx.productName ?? null,
+        ingredientsText: text,
+        ambiguous: ["sugar (possible bone char filtering)"],
+      }),
+    );
+    if (sv && sv.status !== "unknown" && sv.sources.length > 0) {
+      const companySays = sv.manufacturer_confirms && isBrandSource(sv.sources, ctx.brand);
+      const boneChar = companySays && /bone\s?char/i.test(sv.explanation);
+      if (boneChar) {
+        result = {
+          ...result,
+          status: "vegetarian",
+          explanation: "Contains sugar filtered with bone char, so not vegan. No meat or animal rennet.",
+          verification: "manufacturer",
+          evidence: uniqueUrls(sv.sources),
+        };
+      } else if (sv.status === "vegan") {
+        result = {
+          ...result,
+          verification: companySays ? "manufacturer" : "community",
+          evidence: uniqueUrls(sv.sources),
+        };
+      }
+    }
+  }
+
   // Step 4: Cheese & rennet gate. Dairy cheese is only vegetarian if the
   // rennet is microbial/FPC. Absence of "animal rennet" on the label is not
   // evidence, so verify before allowing a vegetarian verdict.
