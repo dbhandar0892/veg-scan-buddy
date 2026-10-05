@@ -26,6 +26,30 @@ const productQuery = (id: string) =>
     },
   });
 
+function uniqueEvidenceUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+      if (seen.has(host)) return false;
+      seen.add(host);
+      return true;
+    } catch {
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    }
+  });
+}
+
+function removeRepeatedSourceNames(text: string): string {
+  return text.replace(
+    /((?:confirmed by|sources?:)\s+)((?:[a-z0-9-]+\.)+[a-z]{2,}(?:\s*,\s*(?:[a-z0-9-]+\.)+[a-z]{2,})+)/gi,
+    (_match, prefix: string, names: string) =>
+      `${prefix}${Array.from(new Set(names.split(",").map((name) => name.trim().toLowerCase()))).join(", ")}`,
+  );
+}
+
 export const Route = createFileRoute("/result/$id")({
   head: () => ({ meta: [
     { title: "Product scan result | VegSeal" },
@@ -60,6 +84,7 @@ function ResultPage() {
   useEffect(() => setDiet(getDietPreference()), []);
   useEffect(() => setFav(isFavorite(product.id)), [product.id]);
   useEffect(() => hapticForStatus(product.status), [product.id, product.status]);
+  const evidenceUrls = uniqueEvidenceUrls(product.evidence_urls ?? []);
 
   const share = async () => {
     hapticTap();
@@ -137,7 +162,7 @@ function ResultPage() {
         <div className="mt-5">
           <StatusHero
             status={product.status}
-            explanation={product.explanation}
+            explanation={removeRepeatedSourceNames(product.explanation)}
             containsEgg={containsEgg(product.ingredients_text)}
           />
         </div>
@@ -155,7 +180,7 @@ function ResultPage() {
           (() => {
             const certifiedByVeganSociety =
               product.status === "vegan" &&
-              (product.evidence_urls ?? []).some((u) => /(^|\.)vegansociety\.com/i.test(u));
+              evidenceUrls.some((u) => /(^|\.)vegansociety\.com/i.test(u));
             return certifiedByVeganSociety ? (
               <p className="mt-3 flex items-center gap-2 text-sm text-vegan">
                 <span className="inline-flex size-5 items-center justify-center rounded-full bg-vegan-soft">
@@ -174,10 +199,10 @@ function ResultPage() {
           })()
         ) : null}
 
-        {product.status !== "unknown" && (product.evidence_urls?.length ?? 0) > 0 ? (
+        {product.status !== "unknown" && evidenceUrls.length > 0 ? (
           <div className="mt-2 text-xs text-muted-foreground">
-            <span>Source{product.evidence_urls!.length > 1 ? "s" : ""}: </span>
-            {product.evidence_urls!.map((u, i) => {
+            <span>Source{evidenceUrls.length > 1 ? "s" : ""}: </span>
+            {evidenceUrls.map((u, i) => {
               let host = u;
               try {
                 host = new URL(u).hostname.replace(/^www\./, "");
