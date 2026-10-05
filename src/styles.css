@@ -130,6 +130,13 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    max-width: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  input, textarea, select {
+    font-size: 16px !important;
   }
   body {
     /* Room for bottom nav on mobile */
