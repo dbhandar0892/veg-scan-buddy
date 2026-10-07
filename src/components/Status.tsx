@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 
 const map: Record<
   Status,
-  { label: string; dot: string; ring: string; bg: string; fg: string }
+  { label: string; dot: string; ring: string; bg: string; fg: string; fgStrong: string }
 > = {
   vegan: {
     label: "Vegan",
@@ -11,6 +11,7 @@ const map: Record<
     ring: "ring-vegan/30",
     bg: "bg-vegan-soft",
     fg: "text-vegan",
+    fgStrong: "text-vegan-strong",
   },
   vegetarian: {
     label: "Vegetarian",
@@ -18,6 +19,7 @@ const map: Record<
     ring: "ring-vegan/30",
     bg: "bg-vegan-soft",
     fg: "text-vegan",
+    fgStrong: "text-vegan-strong",
   },
   not_vegetarian: {
     label: "Not Vegetarian",
@@ -25,6 +27,7 @@ const map: Record<
     ring: "ring-danger/30",
     bg: "bg-danger-soft",
     fg: "text-danger",
+    fgStrong: "text-danger-strong",
   },
   unknown: {
     label: "Unable to Confirm",
@@ -32,6 +35,7 @@ const map: Record<
     ring: "ring-warn/30",
     bg: "bg-warn-soft",
     fg: "text-warn-foreground",
+    fgStrong: "text-warn-foreground",
   },
 };
 
@@ -61,7 +65,7 @@ export function StatusPill({ status, size = "md" }: { status: Status; size?: "sm
 
 const veganMap: Record<
   Status,
-  { label: string; dot: string; ring: string; bg: string; fg: string }
+  { label: string; dot: string; ring: string; bg: string; fg: string; fgStrong: string }
 > = {
   vegan: {
     label: "Vegetarian",
@@ -69,6 +73,7 @@ const veganMap: Record<
     ring: "ring-vegan/30",
     bg: "bg-vegan-soft",
     fg: "text-vegan",
+    fgStrong: "text-vegan-strong",
   },
   vegetarian: {
     label: "Not vegan",
@@ -76,6 +81,7 @@ const veganMap: Record<
     ring: "ring-danger/30",
     bg: "bg-danger-soft",
     fg: "text-danger",
+    fgStrong: "text-danger-strong",
   },
   not_vegetarian: {
     label: "Not vegan",
@@ -83,6 +89,7 @@ const veganMap: Record<
     ring: "ring-danger/30",
     bg: "bg-danger-soft",
     fg: "text-danger",
+    fgStrong: "text-danger-strong",
   },
   unknown: {
     label: "Vegan status unknown",
@@ -90,6 +97,7 @@ const veganMap: Record<
     ring: "ring-warn/30",
     bg: "bg-warn-soft",
     fg: "text-warn-foreground",
+    fgStrong: "text-warn-foreground",
   },
 };
 
@@ -108,21 +116,22 @@ export function StatusHero({
     status === "vegetarian" && containsEgg
       ? "Vegetarian (contains egg)"
       : m.label;
+  const pill = "inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-base font-semibold ring-1";
   return (
     <div className={["rounded-3xl p-6 shadow-soft ring-1", m.bg, m.ring].join(" ")}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", m.bg, m.fg, m.ring].join(" ")}>
-          <span className={["size-2 rounded-full", m.dot].join(" ")} aria-hidden />
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className={[pill, m.bg, m.fgStrong, m.ring].join(" ")}>
+          <span className={["size-2.5 rounded-full", m.dot].join(" ")} aria-hidden />
           {label}
           {(status === "vegetarian" || status === "vegan") ? (
-            <Check className="size-3.5 stroke-[3]" aria-hidden />
+            <Check className="size-4 stroke-[3]" aria-hidden />
           ) : null}
         </span>
-        <span className={["inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1", vm.bg, vm.fg, vm.ring].join(" ")}>
-          <span className={["size-2 rounded-full", vm.dot].join(" ")} aria-hidden />
+        <span className={[pill, vm.bg, vm.fgStrong, vm.ring].join(" ")}>
+          <span className={["size-2.5 rounded-full", vm.dot].join(" ")} aria-hidden />
           {vm.label}
           {status === "vegan" ? (
-            <Check className="size-3.5 stroke-[3]" aria-hidden />
+            <Check className="size-4 stroke-[3]" aria-hidden />
           ) : null}
         </span>
       </div>

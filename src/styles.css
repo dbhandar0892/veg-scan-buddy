@@ -38,6 +38,8 @@
   --color-vegan: var(--vegan);
   --color-vegan-foreground: var(--vegan-foreground);
   --color-vegan-soft: var(--vegan-soft);
+  --color-vegan-strong: var(--vegan-strong);
+  --color-danger-strong: var(--danger-strong);
   --color-warn: var(--warn);
   --color-warn-foreground: var(--warn-foreground);
   --color-warn-soft: var(--warn-soft);
@@ -76,6 +78,7 @@
   --vegan: oklch(0.62 0.16 145);
   --vegan-foreground: oklch(0.99 0.01 145);
   --vegan-soft: oklch(0.94 0.05 145);
+  --vegan-strong: oklch(0.45 0.15 145);
 
   --warn: oklch(0.78 0.14 82);
   --warn-foreground: oklch(0.24 0.06 60);
@@ -84,6 +87,7 @@
   --danger: oklch(0.60 0.22 25);
   --danger-foreground: oklch(0.99 0.01 25);
   --danger-soft: oklch(0.95 0.05 25);
+  --danger-strong: oklch(0.48 0.19 25);
 }
 
 .dark {
@@ -110,6 +114,7 @@
   --vegan: oklch(0.72 0.16 145);
   --vegan-foreground: oklch(0.14 0.02 150);
   --vegan-soft: oklch(0.28 0.05 145);
+  --vegan-strong: oklch(0.82 0.15 145);
 
   --warn: oklch(0.80 0.14 82);
   --warn-foreground: oklch(0.18 0.04 60);
@@ -118,6 +123,7 @@
   --danger: oklch(0.68 0.22 25);
   --danger-foreground: oklch(0.14 0.02 25);
   --danger-soft: oklch(0.28 0.06 25);
+  --danger-strong: oklch(0.84 0.15 25);
 }
 
 @layer base {
