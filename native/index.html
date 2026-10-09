@@ -28,13 +28,13 @@
       <div class="status" id="st">We'll reconnect automatically.</div>
     </div>
     <script>
-      var go=function(){location.href='https://vegseal.com'};
+      var go=function(){location.href='https://www.vegseal.com'};
       document.getElementById('retry').onclick=function(){
         try{window.Capacitor&&Capacitor.Plugins.Haptics&&Capacitor.Plugins.Haptics.impact({style:'MEDIUM'})}catch(e){}
         document.getElementById('st').textContent='Reconnecting…';go();
       };
       window.addEventListener('online',go);
-      setInterval(function(){if(navigator.onLine){fetch('https://vegseal.com/',{mode:'no-cors',cache:'no-store'}).then(go).catch(function(){})}},5000);
+      setInterval(function(){if(navigator.onLine){fetch('https://www.vegseal.com/',{mode:'no-cors',cache:'no-store'}).then(go).catch(function(){})}},5000);
     </script>
   </body>
 </html>

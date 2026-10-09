@@ -8,7 +8,8 @@ const config: CapacitorConfig = {
   // and load the live hosted app through server.url below.
   webDir: 'native',
   server: {
-    url: 'https://vegseal.com',
+    url: 'https://www.vegseal.com',
+    allowNavigation: ['vegseal.com', 'www.vegseal.com', '*.vegseal.com'],
     cleartext: false,
     // Shown from the app bundle when the site can't be reached (offline).
     errorPath: 'index.html',
