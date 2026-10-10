@@ -167,37 +167,53 @@ async function analyzeAndLearn(
   // and product context, never on the AI passes below. Kick it off now so it
   // runs in parallel with the ingredient research instead of after it.
   const cheeseUpfront = detectCheeseAmbiguity(text, ctx.productName ?? null);
+  // Web research can come back empty on one try and succeed on the next, which
+  // made the same product say "Unable to Confirm" first and a real answer on a
+  // rescan. Retry once when the first try is empty or inconclusive.
+  const runRennet = () =>
+    import("./learn.server")
+      .then(({ researchRennet }) =>
+        researchRennet({
+          brand: ctx.brand ?? null,
+          productName: ctx.productName ?? null,
+          cheeseTerm: cheeseUpfront!.term,
+          ingredientsText: text,
+        }),
+      )
+      .catch(() => null);
   const rennetPromise = cheeseUpfront
-    ? import("./learn.server")
-        .then(({ researchRennet }) =>
-          researchRennet({
-            brand: ctx.brand ?? null,
-            productName: ctx.productName ?? null,
-            cheeseTerm: cheeseUpfront.term,
-            ingredientsText: text,
-          }),
-        )
-        .catch(() => null)
+    ? runRennet().then(async (first) => {
+        if (first && first.rennet !== "unknown") return first;
+        const second = await runRennet();
+        return second && second.rennet !== "unknown" ? second : (first ?? second);
+      })
     : null;
 
   // Speed: if the label is already unclear, start the product-level check
   // (step 3) now, alongside steps 1–2. It's only used if the result is still
   // unclear after those steps, so the verdict logic is unchanged.
+  const ambiguousNames = result.hits
+    .filter((h) => h.vegan === null || h.vegetarian === null)
+    .slice(0, 8)
+    .map((h) => h.name);
+  const runVerdict = () =>
+    import("./learn.server")
+      .then(({ researchProductVerdict }) =>
+        researchProductVerdict({
+          brand: ctx.brand ?? null,
+          productName: ctx.productName ?? null,
+          ingredientsText: text,
+          ambiguous: ambiguousNames,
+        }),
+      )
+      .catch(() => null);
   const verdictPromise =
     result.status === "unknown"
-      ? import("./learn.server")
-          .then(({ researchProductVerdict }) =>
-            researchProductVerdict({
-              brand: ctx.brand ?? null,
-              productName: ctx.productName ?? null,
-              ingredientsText: text,
-              ambiguous: result.hits
-                .filter((h) => h.vegan === null || h.vegetarian === null)
-                .slice(0, 8)
-                .map((h) => h.name),
-            }),
-          )
-          .catch(() => null)
+      ? runVerdict().then(async (first) => {
+          if (first && first.status !== "unknown") return first;
+          const second = await runVerdict();
+          return second && second.status !== "unknown" ? second : (first ?? second);
+        })
       : null;
 
 
