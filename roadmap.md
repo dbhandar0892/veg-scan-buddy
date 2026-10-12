@@ -3,6 +3,7 @@
 ## App Store header images
 - Completed the light and dark Oreo headers with the app-green background.
 - Created a three-iPhone header using Oreo, Reddi Wip, and Parmesan screenshots, with "Vegan or Vegetarian. Scan to find out." in both Apple sizes.
+- In progress: sharpen the screen text in the chosen three-iPhone header without changing its design.
 
 ## Waiting on the user
 - Publish the web app so the iPhone app picks up the pending fixes.
