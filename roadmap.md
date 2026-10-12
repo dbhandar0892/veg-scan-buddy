@@ -15,3 +15,4 @@
 - RevenueCat: create the subscription, the pro entitlement, and give the iOS public SDK key.
 - Confirm the real support inbox (support@vegseal.com was invented).
 - Made the three new screens extra crisp (v2) in both Apple sizes.
+- Made the three phones bigger (v3) in both Apple sizes.
