@@ -262,9 +262,10 @@ const SPECIFIC_DESCRIPTORS: Record<string, string> = {
   elastin: "from animal connective tissue",
 };
 
-// Meat words: shown as "Contains chicken (or chicken flavor)" so labels that
-// list flavoring rather than real meat are still covered.
+// Meat words: named exactly as the label lists them — "Contains chicken" for
+// chicken, "Contains chicken flavor" for chicken flavor.
 const MEAT_FLAVOR_RE = /\b(chicken|beef|pork|lamb|turkey|fish|meat)\b(?:\s+flavo?u?rs?)?/i;
+const FLAVOR_WORD_RE = /\bflavo?u?r(s|ing|ed)?\b/i;
 
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
@@ -408,13 +409,16 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
       } else if (MEAT_FLAVOR_RE.test(name) || MEAT_FLAVOR_RE.test(culprit.token)) {
-        // Meat words read best as "Contains chicken (or chicken flavor)" — it
-        // also covers labels that list "chicken flavor" instead of the meat.
+        // Name exactly what the label lists: "Contains chicken" when the
+        // ingredient is chicken, "Contains chicken flavor" when the label
+        // says chicken flavor — no combined "(or …)" phrasing.
+        const mentionsFlavor =
+          FLAVOR_WORD_RE.test(culprit.token) || FLAVOR_WORD_RE.test(name);
         const base =
           MEAT_FLAVOR_RE.exec(culprit.token)?.[1]?.toLowerCase() ??
           MEAT_FLAVOR_RE.exec(name)?.[1]?.toLowerCase() ??
           name;
-        explanation = `Contains ${base} (or ${base} flavor). Not vegan or vegetarian.`;
+        explanation = `Contains ${base}${mentionsFlavor ? " flavor" : ""}. Not vegan or vegetarian.`;
       } else if (!generic) {
         const why = shortWhy(detail);
         // If the "why" already reads as its own "contains …" sentence, don't
