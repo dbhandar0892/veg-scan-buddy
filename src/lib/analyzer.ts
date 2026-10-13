@@ -272,7 +272,7 @@ function cleanDetail(raw: string | undefined): string {
 // A "why" blurb is only safe to show next to a "Not vegan or vegetarian"
 // verdict if it doesn't contradict it, cite sources, or read like research
 // notes. Anything else gets dropped in favour of a neutral phrase.
-function safeWhy(detail: string): string {
+function safeWhy(detail: string, ingredientName = ""): string {
   if (!detail) return "";
   const d = detail
     // drop citation sentences entirely
@@ -286,6 +286,20 @@ function safeWhy(detail: string): string {
   // Contradictory or malformed research text
   if (/\bis\s+(?:\/)?vegetarian\b|\bis\s+vegan\b|\bplant[-\s]?based\b|\bmaking it\b|\/vegetarian|\/vegan/i.test(d)) return "";
   if (/\bingredients? list\b|\bstates\b|\baccording to\b|\bcontains wheat\b/i.test(d)) return "";
+  // Drop redundant "why" text that just restates the ingredient itself,
+  // e.g. "from chickens" for chicken, or "chicken is meat from chickens" —
+  // otherwise the message reads "Contains chicken, from chickens."
+  const simplified = d
+    .toLowerCase()
+    .replace(/\bnot (vegan|vegetarian)( or (vegan|vegetarian))?\b/g, "")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/^from [a-z]+s?$/.test(simplified)) return "";
+  if (ingredientName) {
+    const n = ingredientName.toLowerCase().trim();
+    if (n && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(simplified)) return "";
+  }
   return tidy(d);
 }
 
@@ -381,7 +395,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
       const shortWhy = (d: string) =>
         tidy(
-          safeWhy(d)
+          safeWhy(d, name)
             .replace(/^(a |an |the )/i, "")
             .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
             .replace(/\.$/, "")
