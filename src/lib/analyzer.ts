@@ -262,6 +262,9 @@ const SPECIFIC_DESCRIPTORS: Record<string, string> = {
   elastin: "from animal connective tissue",
 };
 
+// Meat words: shown as "Contains chicken (or chicken flavor)" so labels that
+// list flavoring rather than real meat are still covered.
+const MEAT_FLAVOR_RE = /\b(chicken|beef|pork|lamb|turkey|fish|meat)\b(?:\s+flavo?u?rs?)?/i;
 
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
