@@ -272,7 +272,7 @@ function cleanDetail(raw: string | undefined): string {
 // A "why" blurb is only safe to show next to a "Not vegan or vegetarian"
 // verdict if it doesn't contradict it, cite sources, or read like research
 // notes. Anything else gets dropped in favour of a neutral phrase.
-function safeWhy(detail: string): string {
+function safeWhy(detail: string, ingredientName = ""): string {
   if (!detail) return "";
   const d = detail
     // drop citation sentences entirely
