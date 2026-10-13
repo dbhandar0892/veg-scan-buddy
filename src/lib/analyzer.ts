@@ -395,7 +395,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       // Short, consistent style: "Contains <substance> (E###), <why>. Not vegan or vegetarian."
       const shortWhy = (d: string) =>
         tidy(
-          safeWhy(d)
+          safeWhy(d, name)
             .replace(/^(a |an |the )/i, "")
             .replace(/\bnot vegan( or vegetarian)?\.?/gi, "")
             .replace(/\.$/, "")
