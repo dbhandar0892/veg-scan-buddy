@@ -262,6 +262,9 @@ const SPECIFIC_DESCRIPTORS: Record<string, string> = {
   elastin: "from animal connective tissue",
 };
 
+// Meat words: shown as "Contains chicken (or chicken flavor)" so labels that
+// list flavoring rather than real meat are still covered.
+const MEAT_FLAVOR_RE = /\b(chicken|beef|pork|lamb|turkey|fish|meat)\b(?:\s+flavo?u?rs?)?/i;
 
 function cleanDetail(raw: string | undefined): string {
   const detail = (raw || "").trim();
@@ -404,6 +407,14 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       if (specific) {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
+      } else if (MEAT_FLAVOR_RE.test(name) || MEAT_FLAVOR_RE.test(culprit.token)) {
+        // Meat words read best as "Contains chicken (or chicken flavor)" — it
+        // also covers labels that list "chicken flavor" instead of the meat.
+        const base =
+          MEAT_FLAVOR_RE.exec(culprit.token)?.[1]?.toLowerCase() ??
+          MEAT_FLAVOR_RE.exec(name)?.[1]?.toLowerCase() ??
+          name;
+        explanation = `Contains ${base} (or ${base} flavor). Not vegan or vegetarian.`;
       } else if (!generic) {
         const why = shortWhy(detail);
         // If the "why" already reads as its own "contains …" sentence, don't
