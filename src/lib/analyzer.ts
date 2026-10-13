@@ -405,7 +405,7 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
         const descriptor = SPECIFIC_DESCRIPTORS[specific.toLowerCase()] ?? "animal-derived";
         explanation = `Contains ${specific}${eNum ? ` (${eNum.toUpperCase()})` : ""}, ${descriptor}. Not vegan or vegetarian.`;
       } else if (!generic) {
-        const why = shortWhy(detail, name);
+        const why = shortWhy(detail);
         // If the "why" already reads as its own "contains …" sentence, don't
         // nest it after another "Contains X," — that produced the duplicated
         // "Contains seasoning, contains dairy …" phrasing.
