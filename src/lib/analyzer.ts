@@ -286,6 +286,20 @@ function safeWhy(detail: string, ingredientName = ""): string {
   // Contradictory or malformed research text
   if (/\bis\s+(?:\/)?vegetarian\b|\bis\s+vegan\b|\bplant[-\s]?based\b|\bmaking it\b|\/vegetarian|\/vegan/i.test(d)) return "";
   if (/\bingredients? list\b|\bstates\b|\baccording to\b|\bcontains wheat\b/i.test(d)) return "";
+  // Drop redundant "why" text that just restates the ingredient itself,
+  // e.g. "from chickens" for chicken, or "chicken is meat from chickens" —
+  // otherwise the message reads "Contains chicken, from chickens."
+  const simplified = d
+    .toLowerCase()
+    .replace(/\bnot (vegan|vegetarian)( or (vegan|vegetarian))?\b/g, "")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/^from [a-z]+s?$/.test(simplified)) return "";
+  if (ingredientName) {
+    const n = ingredientName.toLowerCase().trim();
+    if (n && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(simplified)) return "";
+  }
   return tidy(d);
 }
 
