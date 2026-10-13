@@ -49,7 +49,9 @@ npx cap sync
 npx cap open ios   # or: npx cap open android
 ```
 
-iOS needs `NSCameraUsageDescription` in `Info.plist` for barcode scanning.
+iOS needs `NSCameraUsageDescription` in `Info.plist` for barcode scanning — it is
+already there, and its wording is what appears under the "VegSeal Would Like to
+Use the Camera" heading.
 
 ## Note on a fully offline bundle
 
@@ -83,3 +85,18 @@ The app code is ready; the remaining steps happen in your local checkout and App
 
 Purchases write `profiles.is_subscribed` so the paywall unlocks after payment.
 "Restore purchase" re-checks the Apple ID's entitlements.
+
+## Camera prompt wording (branded, not the domain)
+
+The shell loads the live site, so a web-view camera request would normally be
+attributed to the address on screen: "vegseal.com would like to use the camera".
+`ios/App/App/VegSealBridgeViewController.swift` intercepts that request and asks
+for camera access natively first, so the prompt reads "VegSeal Would Like to Use
+the Camera" with the `NSCameraUsageDescription` sentence underneath.
+`SceneDelegate.swift` instantiates `VegSealBridgeViewController` instead of
+`CAPBridgeViewController`; every other web-view UI question (alerts, confirm
+boxes, new windows) is forwarded to Capacitor's own handler unchanged.
+
+If the sentence itself should change, edit `NSCameraUsageDescription` in
+`ios/App/App/Info.plist`. A user who already chose "Don't Allow" is not asked
+again — iOS only re-prompts from the Settings app.
