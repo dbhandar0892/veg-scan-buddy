@@ -4,6 +4,8 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
+  containsEgg,
+  EGG_EXPLANATION,
   deriveStatusFromHits,
   detectCheeseAmbiguity,
   hasNonVegetarianEvidence,
@@ -560,6 +562,19 @@ async function upsertProduct(
     source: string;
   },
 ): Promise<AnalyzedProduct> {
+  // Egg guard: any form of egg means never vegan, whatever earlier steps said.
+  if (data.analysis.status === "vegan" && containsEgg(data.ingredients_text)) {
+    data = {
+      ...data,
+      analysis: {
+        ...data.analysis,
+        status: "vegetarian",
+        explanation: EGG_EXPLANATION,
+        verification: "unverified",
+        evidence: [],
+      },
+    };
+  }
   const row = {
     barcode: data.barcode ?? null,
     name: data.name,

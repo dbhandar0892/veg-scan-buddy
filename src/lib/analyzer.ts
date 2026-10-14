@@ -332,8 +332,17 @@ export function containsEgg(ingredientsText: string | null | undefined): boolean
   return !!ingredientsText && EGG_RE.test(ingredientsText);
 }
 
+export const EGG_EXPLANATION =
+  "Contains egg. Egg is generally considered vegetarian, but it is not vegan.";
 
-export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
+
+export function deriveStatusFromHits(inputHits: IngredientHit[]): AnalysisResult {
+  // Any form of egg is vegetarian but never vegan, regardless of stored data.
+  const hits = inputHits.map((h) =>
+    EGG_RE.test(`${h.token} ${h.name}`) && h.vegetarian !== false
+      ? { ...h, vegan: false, vegetarian: true }
+      : h,
+  );
 
   let matched = 0;
   let unknownCount = 0;
@@ -467,14 +476,19 @@ export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
       const n = c.name.toLowerCase();
       const slug = (c.slug ?? "").toLowerCase();
       if (slug.includes("honey") || n.includes("honey")) kinds.add("honey");
-      else if (slug.includes("egg") || n.includes("egg") || n.includes("albumen")) kinds.add("egg");
+      else if (EGG_RE.test(`${slug} ${n} ${c.token}`)) kinds.add("egg");
       else kinds.add("dairy");
     }
     const label =
       kinds.size === 0
         ? "dairy, egg, or honey"
         : Array.from(kinds).join(kinds.size === 2 ? " and " : ", ");
-    explanation = `Contains ${label}, but no meat or animal rennet.`;
+    explanation =
+      kinds.size === 1 && kinds.has("egg")
+        ? EGG_EXPLANATION
+        : kinds.has("egg")
+          ? `Contains ${label}, but no meat or animal rennet. Egg is generally considered vegetarian, but it is not vegan.`
+          : `Contains ${label}, but no meat or animal rennet.`;
   } else if (hasUnknownVeganOnly) {
     status = "vegetarian";
     explanation = "Vegetarian confirmed; a few items couldn't be verified as vegan.";
