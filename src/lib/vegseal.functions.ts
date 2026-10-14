@@ -4,6 +4,8 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   analyzeText,
+  containsEgg,
+  EGG_EXPLANATION,
   deriveStatusFromHits,
   detectCheeseAmbiguity,
   hasNonVegetarianEvidence,

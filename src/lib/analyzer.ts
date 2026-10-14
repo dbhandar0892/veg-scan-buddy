@@ -332,6 +332,9 @@ export function containsEgg(ingredientsText: string | null | undefined): boolean
   return !!ingredientsText && EGG_RE.test(ingredientsText);
 }
 
+export const EGG_EXPLANATION =
+  "Contains egg. Egg is generally considered vegetarian, but it is not vegan.";
+
 
 export function deriveStatusFromHits(hits: IngredientHit[]): AnalysisResult {
 
