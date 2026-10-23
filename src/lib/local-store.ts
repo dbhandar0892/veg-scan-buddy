@@ -108,7 +108,8 @@ export async function syncFavorites(): Promise<void> {
       .eq("user_id", c.uid)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    const remote = (data ?? []).map((r) => r.item as unknown as HistoryItem);
+    type FavRow = { product_id: string; item: unknown; created_at: string };
+    const remote = ((data ?? []) as FavRow[]).map((r) => r.item as unknown as HistoryItem);
     const remoteIds = new Set(remote.map((r) => r.id));
     const localOnly = getFavorites().filter((f) => !remoteIds.has(f.id));
     if (localOnly.length) {
