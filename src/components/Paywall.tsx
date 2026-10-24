@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ShieldCheck, Sparkles } from "lucide-react";
-import { PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
+import { PRICE_ANNUAL, PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
 import { isNativeApp, purchaseSubscription, restorePurchases } from "@/lib/iap";
 
 const PERKS = [
@@ -11,7 +11,10 @@ const PERKS = [
   "Scan history and favorites synced to your account",
 ];
 
+type Plan = "monthly" | "annual";
+
 export function Paywall({ signedIn }: { signedIn: boolean }) {
+  const [plan, setPlan] = useState<Plan>("annual");
   const [busy, setBusy] = useState<"buy" | "restore" | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const native = isNativeApp();
@@ -19,7 +22,8 @@ export function Paywall({ signedIn }: { signedIn: boolean }) {
   const run = async (kind: "buy" | "restore") => {
     setBusy(kind);
     setNote(null);
-    const result = kind === "buy" ? await purchaseSubscription() : await restorePurchases();
+    const result = kind === "buy" ? await purchaseSubscription(plan) : await restorePurchases();
+
     setBusy(null);
     if (result.status === "active") {
       setNote("You're subscribed. Thanks for supporting VegSeal!");
