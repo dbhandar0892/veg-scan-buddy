@@ -33,6 +33,8 @@ type PurchasesModule = {
 };
 
 type CustomerInfo = { entitlements: { active: Record<string, unknown> } };
+type PackageLike = { identifier?: string; product?: { identifier?: string } };
+
 
 export function isNativeApp(): boolean {
   if (typeof window === "undefined") return false;
