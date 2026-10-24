@@ -57,9 +57,10 @@ export function Paywall({ signedIn }: { signedIn: boolean }) {
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {signedIn
-            ? `Keep scanning with VegSeal for ${PRICE_MONTHLY} a month. Cancel any time.`
-            : `Create a free account and get ${TRIAL_DAYS} days of unlimited scanning. After that it's ${PRICE_MONTHLY} a month.`}
+            ? `Keep scanning with VegSeal for ${PRICE_MONTHLY} a month or ${PRICE_ANNUAL} a year. Cancel any time.`
+            : `Create a free account and get ${TRIAL_DAYS} days of unlimited scanning. After that it's ${PRICE_MONTHLY} a month or ${PRICE_ANNUAL} a year.`}
         </p>
+
 
         <ul className="mt-5 space-y-2 text-left">
           {PERKS.map((p) => (
@@ -72,14 +73,53 @@ export function Paywall({ signedIn }: { signedIn: boolean }) {
 
         {signedIn ? (
           <>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPlan("annual")}
+                className={
+                  "rounded-2xl border px-2 py-3 text-center transition-colors " +
+                  (plan === "annual"
+                    ? "border-primary bg-accent/60"
+                    : "border-border bg-card")
+                }
+              >
+                <span className="block text-sm font-semibold text-foreground">Annual</span>
+                <span className="block text-xs text-muted-foreground">{PRICE_ANNUAL}/year</span>
+                <span className="mt-1 inline-block rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  Save 30%
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlan("monthly")}
+                className={
+                  "rounded-2xl border px-2 py-3 text-center transition-colors " +
+                  (plan === "monthly"
+                    ? "border-primary bg-accent/60"
+                    : "border-border bg-card")
+                }
+              >
+                <span className="block text-sm font-semibold text-foreground">Monthly</span>
+                <span className="block text-xs text-muted-foreground">{PRICE_MONTHLY}/month</span>
+                <span className="mt-1 inline-block rounded-full bg-transparent px-2 py-0.5 text-[11px] text-muted-foreground">
+                  Cancel any time
+                </span>
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => run("buy")}
               disabled={busy !== null}
-              className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card disabled:opacity-60"
+              className="mt-4 w-full rounded-2xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-card disabled:opacity-60"
             >
-              {busy === "buy" ? "Opening App Store…" : `Subscribe for ${PRICE_MONTHLY}/month`}
+              {busy === "buy"
+                ? "Opening App Store…"
+                : plan === "annual"
+                  ? `Subscribe for ${PRICE_ANNUAL}/year`
+                  : `Subscribe for ${PRICE_MONTHLY}/month`}
             </button>
+
             <button
               type="button"
               onClick={() => run("restore")}
