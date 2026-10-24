@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { useAccess, PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
+import { useAccess, PRICE_ANNUAL, PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
@@ -209,7 +209,7 @@ function ProfilePage() {
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-sm font-medium text-foreground">
               {access.isSubscribed
-                ? `VegSeal subscription — ${PRICE_MONTHLY}/month`
+                ? "VegSeal subscription"
                 : access.daysLeft > 0
                   ? access.daysLeft === 1
                     ? "Free trial — last day"
@@ -220,8 +220,8 @@ function ProfilePage() {
               {access.isSubscribed
                 ? "Unlimited scanning. Cancel any time."
                 : access.daysLeft > 0
-                  ? `Unlimited scanning during your ${TRIAL_DAYS}-day trial, then ${PRICE_MONTHLY} a month.`
-                  : `Subscribe for ${PRICE_MONTHLY} a month to keep scanning.`}
+                  ? `Unlimited scanning during your ${TRIAL_DAYS}-day trial, then ${PRICE_MONTHLY} a month or ${PRICE_ANNUAL} a year.`
+                  : `Subscribe for ${PRICE_MONTHLY} a month or ${PRICE_ANNUAL} a year to keep scanning.`}
             </p>
           </div>
         </section>

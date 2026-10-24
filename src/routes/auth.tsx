@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { PRICE_ANNUAL, PRICE_MONTHLY, TRIAL_DAYS } from "@/lib/access";
 
 const authSearchSchema = z.object({
   redirect: z.enum(["/", "/profile", "/scan"]).optional().catch(undefined),
@@ -249,7 +250,7 @@ function AuthPage() {
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
               {redirect === "/scan"
-                ? "Please sign in to continue scanning. New users get a 7-day free trial."
+                ? `Please sign in to continue scanning. New users get a ${TRIAL_DAYS}-day free trial, then ${PRICE_MONTHLY}/month or ${PRICE_ANNUAL}/year.`
                 : "Sign in to keep your scans across devices."}
             </p>
           </div>

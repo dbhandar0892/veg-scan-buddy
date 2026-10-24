@@ -59,7 +59,7 @@ function SupportPage() {
           />
           <Faq
             q="How does the free trial work?"
-            a="New users get a 7-day free trial with unlimited scans. After that, VegSeal is $2.99/month, billed through your Apple ID. You can manage or cancel anytime in your iPhone's subscription settings."
+            a="New users get a 7-day free trial with unlimited scans. After that, VegSeal is $2.99/month or $24.99/year, billed through your Apple ID. You can manage or cancel anytime in your iPhone's subscription settings."
           />
           <Faq
             q="How do I restore a purchase or delete my account?"
