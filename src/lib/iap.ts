@@ -82,12 +82,18 @@ export type PurchaseResult =
   | { status: "none" }
   | { status: "error"; message: string };
 
-export async function purchaseSubscription(): Promise<PurchaseResult> {
+export async function purchaseSubscription(plan: "monthly" | "annual" = "monthly"): Promise<PurchaseResult> {
   const Purchases = await getPurchases();
   if (!Purchases) return { status: "unavailable" };
   try {
     const offerings = await Purchases.getOfferings();
-    const pkg = offerings.current?.availablePackages?.[0];
+    const packages = offerings.current?.availablePackages ?? [];
+    const wanted = plan === "annual" ? ANNUAL_PRODUCT_ID : PRODUCT_ID;
+    const wantedPackageId = plan === "annual" ? "$rc_annual" : "$rc_monthly";
+    const pkg =
+      packages.find((p) => (p as PackageLike)?.product?.identifier === wanted) ??
+      packages.find((p) => (p as PackageLike)?.identifier === wantedPackageId) ??
+      packages[0];
     if (!pkg) return { status: "error", message: "No subscription available right now." };
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
     if (isActive(customerInfo)) {
