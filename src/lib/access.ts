@@ -1,4 +1,4 @@
-// 7-day unlimited free trial, then a $2.99/month subscription.
+// 7-day unlimited free trial, then $2.99/month or $24.99/year.
 // Trial starts when an account is created (profiles.trial_started_at).
 
 import { useEffect, useState } from "react";
@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const TRIAL_DAYS = 7;
 export const PRICE_MONTHLY = "$2.99";
+export const PRICE_ANNUAL = "$24.99";
+
 
 function isDefinitiveAuthError(message: string): boolean {
   return /invalid|expired|user_not_found|does not exist|sub claim/i.test(message);

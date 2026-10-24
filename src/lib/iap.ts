@@ -15,7 +15,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const PRODUCT_ID = "com.vegseal.app.pro.monthly";
+export const ANNUAL_PRODUCT_ID = "com.vegseal.app.pro.annual";
 export const ENTITLEMENT_ID = "pro";
+
 
 const PLUGIN = "@revenuecat/purchases-capacitor";
 
